@@ -208,7 +208,9 @@ int readHisto(TString infile) {
   Int_t canvas_count_temp=0;
   for(auto iter=ClockphaseHisto.begin();iter!=ClockphaseHisto.end();iter++){
   	cc[canvas_count_temp]=new TCanvas(Form("cmpd%d",canvas_count_temp),Form("MPD %d",iter->first));
+  	cc[canvas_count_temp]->SetWindowSize(1300,1000);
   	cc[canvas_count_temp]->cd();
+  	
   	for(auto iter_adc=iter->second.begin();iter_adc!=iter->second.end();iter_adc++){
   	//TLine *line = new TLine(0,10,300,900);
 	//line->SetLineColor(kRed);
@@ -218,6 +220,10 @@ int readHisto(TString infile) {
   	
   	cc[canvas_count_temp]->Update();
   	gPad->BuildLegend(0.78,0.695,0.980,0.935,"","f");
+  	TString a=infile;
+  	a.Resize(a.Last('.'));
+  	cc[canvas_count_temp]->SaveAs(Form("result/%s_MPD%02d.jpg",a.Data(),iter->first));
+  
   	canvas_count_temp++;
   }
   
