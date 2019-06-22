@@ -155,7 +155,7 @@ int readHisto(TString infile) {
   	double low_vol=0;
   	double low_index=0;
  	
-  	for(Int_t val_iter=0;val_iter<4096;val_iter++){
+   /*	for(Int_t val_iter=0;val_iter<4096;val_iter++){
   		if(val_iter>1300){
   		high_vol+=val_iter*val_v[val_iter];
   		high_index+=val_v[val_iter];
@@ -166,9 +166,9 @@ int readHisto(TString infile) {
   	}
   	ClockphaseHisto[mpd_v][adc_v]->Fill(clockphase_v,int(high_vol/high_index));
   	ClockphaseHisto[mpd_v][adc_v]->Fill(clockphase_v,int(low_vol/low_index));
-	
-   /*	//
-  	int threshold = 1000;
+ */	
+  	//
+  	int threshold = 1500;
   	for(Int_t val_iter=threshold ; val_iter<4096;val_iter++){
   		if( val_v[val_iter]!=0)high_vol=val_iter;
   	}
@@ -179,7 +179,7 @@ int readHisto(TString infile) {
   	ClockphaseHisto[mpd_v][adc_v]->Fill(clockphase_v,high_vol);
   	ClockphaseHisto[mpd_v][adc_v]->Fill(clockphase_v,low_vol);
   	
-   */ 	
+   	
   	
   	if(adc_v <= 7){
   		ClockphaseHisto[mpd_v][adc_v]->SetMarkerStyle(20);
@@ -220,10 +220,11 @@ int readHisto(TString infile) {
   	
   	cc[canvas_count_temp]->Update();
   	gPad->BuildLegend(0.78,0.695,0.980,0.935,"","f");
+  	
+  	// process the file name
   	TString a=infile;
   	a.Resize(a.Last('.'));
   	cc[canvas_count_temp]->SaveAs(Form("result/%s_MPD%02d.jpg",a.Data(),iter->first));
-  
   	canvas_count_temp++;
   }
   
