@@ -114,6 +114,18 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	std::cout<<"\n gold.dp double crystal ball fit"<<std::endl;
 	golddPhist->Fit("fH2OSpecCrystal","R","ep",-0.01,0);
 
+/*
+
+	//create the the fit functions
+	TF1 *WaterSpectrumF=new TF1 ("myCrystalBallWater","crystalball(0)+crystalball(5)",-0.01,-0.003);
+	WaterSpectrumF->SetLineColor(2);
+	WaterSpectrumF->SetLineWidth(3);
+	WaterSpectrumF->SetParameters(708,-0.00438899,0.000261248,0.66414,2.31777,49.1471,-0.00746947,0.000727079,0.786966,0.58063);
+	golddPhist->Fit("myCrystalBallWater","","ep",-0.01,-0.003);
+//
+	//WaterSpectrumF->Draw("same");
+
+*/
 	gPad->SetLogy(1);
 	gPad->SetGridx(1);
 	gPad->SetGridy(1);
