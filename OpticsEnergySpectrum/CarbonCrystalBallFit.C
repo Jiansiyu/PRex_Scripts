@@ -1,7 +1,6 @@
 /************
  * PRex Carbon  Crystal Ball Fit Functions
  *
- *
  ************/
 #include <string>
 #include <TChain.h>
@@ -23,9 +22,6 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	std::string basicCuts =
 			Form(   "%s.vdc.u1.nclust==1 && %s.vdc.v1.nclust==1 && %s.vdc.u2.nclust==1 && %s.vdc.v2.nclust==1 &&  %s.gold.dp<1 && %s.gold.dp > -0.1 && fEvtHdr.fEvtType==1",
 					HRSArm.c_str(), HRSArm.c_str(), HRSArm.c_str(), HRSArm.c_str(), HRSArm.c_str(),HRSArm.c_str());
-
-//	std::string fiducials = Form("(%s.gold.th)<-0.0015 &&(%s.gold.th)>-0.008 && (%s.gold.ph)<0.001&& (%s.gold.ph)>-0.0018",
-//				HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str());
 
 	std::string fiducials = Form("abs(%s.gold.th)<0.004 && abs(%s.gold.ph)<0.002",
 			HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str());
@@ -58,21 +54,7 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	trXhist->Fit("myCrystalBall","","ep",-0.15,-0.0);
 	CarbonSpectrumF->Draw("same");
 
-	gPad->SetLogy(1);
-/*	// fit a raght gaus and use this gaus as input for the vrcrystal
-	double_t gausPar[3];
-	TF1 *gaustemp=new TF1 ("mygaus","gaus",-0.5,-0.1);
-	trXhist->Fit("mygaus","","ep",-0.5,-0.1);
-	gaustemp->GetParameters(gausPar);
-
-
-	TF1 *CarbonSpectrumF=new TF1 ("myCrystalBall","crystalball",-0.25,-0.13);
-	CarbonSpectrumF->SetLineColor(2);
-	CarbonSpectrumF->SetLineWidth(3);
-	CarbonSpectrumF->SetParameters(708,-0.00438899,0.000261248,0.66414,2.31777,49.1471,-0.00746947,0.000727079,0.786966,0.58063);
-	trXhist->Fit("myCrystalBall","","ep",-0.25,-0.13);
-	CarbonSpectrumF->Draw("same");*/
-
+//	gPad->SetLogy(1);
 
 	c0->cd(4);
 	TH2F *htgtThPhNoCut = new TH2F("htgthphNoCut","Target theta-phi (theta vertical)",
@@ -84,14 +66,11 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	gPad->SetGridy(1);
 
 	c0->cd(2);
-//	TH1F *golddPhist=new TH1F("tr.tg_dp","tr.tg_dp",1000,-0.05,0.01);//1676
-//	t->Project(golddPhist->GetName(),Form("%s.tr.tg_dp",HRSArm.c_str()),Form("%s && %s",basicCuts.c_str(),fiducials.c_str()));
-//	golddPhist->DrawCopy();
 
-	 TH1F *golddPhist=new TH1F("tr.tg_dp","tr.tg_dp",600,-0.1,-0.00);//1676
-	  t->Project(golddPhist->GetName(),Form("%s.tr.tg_dp",HRSArm.c_str()),
-		     Form("%s && %s",basicCuts.c_str(),fiducials.c_str()));
-	  golddPhist->DrawCopy();
+	TH1F *golddPhist = new TH1F("gold.dp", "gold.dp", 1000, -0.01, -0.00); //1676
+	t->Project(golddPhist->GetName(), Form("%s.gold.dp", HRSArm.c_str()),
+			Form("%s && %s", basicCuts.c_str(), fiducials.c_str()));
+	golddPhist->DrawCopy();
 
 	//create the the fit functions
 //	TF1 *CarbonSpectrumF=new TF1 ("myCrystalBall","crystalball",-0.04,-0.05);
@@ -101,13 +80,13 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 //	golddPhist->Fit("myCrystalBall","","ep",-0.04,-0.05);
 
 	//create the the fit functions
-//	TF1 *CarbonSpectrumF=new TF1 ("myCrystalBall","crystalball(0)+crystalball(5)",-0.01,-0.003);
-//	CarbonSpectrumF->SetLineColor(2);
-//	CarbonSpectrumF->SetLineWidth(3);
-//	CarbonSpectrumF->SetParameters(708,-0.00438899,0.000261248,0.66414,2.31777,49.1471,-0.00746947,0.000727079,0.786966,0.58063);
-//	golddPhist->Fit("myCrystalBall","","ep",-0.01,-0.003);
+	TF1 *WaterSpectrumF=new TF1 ("myCrystalBallWater","crystalball(0)+crystalball(5)",-0.01,-0.003);
+	WaterSpectrumF->SetLineColor(2);
+	WaterSpectrumF->SetLineWidth(3);
+	WaterSpectrumF->SetParameters(708,-0.00438899,0.000261248,0.66414,2.31777,49.1471,-0.00746947,0.000727079,0.786966,0.58063);
+	golddPhist->Fit("myCrystalBallWater","","ep",-0.01,-0.003);
 //
-//	CarbonSpectrumF->Draw("same");
+	WaterSpectrumF->Draw("same");
 
 	gPad->SetLogy(1);
 	gPad->SetGridx(1);
