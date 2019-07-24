@@ -50,7 +50,7 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	goldYhist->DrawCopy();
 
 	c0->cd(5);
-	TH1F *trXhist= new TH1F("tr.x","tr.x",1000,-0.15,0.0);
+	TH1F *trXhist= new TH1F("tr.x","tr.x",1000,-0.25,0.15);
 	t->Project(trXhist->GetName(),Form("%s.tr.x",HRSArm.c_str()),Form("%s && %s",basicCuts.c_str(),fiducials.c_str()));
 	trXhist->DrawCopy();
 
