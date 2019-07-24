@@ -1,6 +1,5 @@
 /************
  * PRex Carbon  Crystal Ball Fit Functions
- *
  ************/
 #include <string>
 #include <TChain.h>
@@ -23,8 +22,13 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 			Form(   "%s.vdc.u1.nclust==1 && %s.vdc.v1.nclust==1 && %s.vdc.u2.nclust==1 && %s.vdc.v2.nclust==1 &&  %s.gold.dp<1 && %s.gold.dp > -0.1 && fEvtHdr.fEvtType==1",
 					HRSArm.c_str(), HRSArm.c_str(), HRSArm.c_str(), HRSArm.c_str(), HRSArm.c_str(),HRSArm.c_str());
 
-	std::string fiducials = Form("abs(%s.gold.th)<0.004 && abs(%s.gold.ph)<0.002",
-			HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str());
+	// select the centrol hole
+   //	std::string fiducials = Form("abs(%s.gold.th)<0.004 && abs(%s.gold.ph)<0.002",
+   //			HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str());
+
+	// select the large hole on the left side
+	std::string fiducials = Form("(%s.gold.th)<0.022 &&(%s.gold.th)>0.014 && (%s.gold.ph)<-0.007 && (%s.gold.ph)>-0.011",
+				HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str(),HRSArm.c_str());
 
 	std::cout<<"basic cuts : "<<basicCuts.c_str()<<std::endl;
 	std::cout<<"fiducial cuts : "<<fiducials.c_str()<<std::endl;
@@ -47,8 +51,43 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	t->Project(trXhist->GetName(),Form("%s.tr.x",HRSArm.c_str()),Form("%s && %s",basicCuts.c_str(),fiducials.c_str()));
 	trXhist->DrawCopy();
 
+	// fit the two peak with the gaus functions
+	double_t fHtrxGausPar[3];
+	TF1 *fHtrxGaus=new TF1("trxHGaus","gaus",-0.096,-0.078);
+	trXhist->Fit("trxHGaus","R","ep",-0.096,-0.078);
+	fHtrxGaus->GetParameters(fHtrxGausPar);
 
-	// fit the tr.x parameter
+	double_t fHtrxCrystalPar[5];
+	TF1 *fHtrxCrystal=new TF1("trxHCrystal","crystalball",-0.13,-0.078);
+	fHtrxCrystal->SetParameters(fHtrxGausPar[0],fHtrxGausPar[1],fHtrxGausPar[2],1,1);
+	trXhist->Fit("trxHCrystal","R","ep",-0.13,-0.078);
+	fHtrxCrystal->GetParameters(fHtrxCrystalPar);
+
+	// fit the O peak with gaus
+	double_t  fOtrxGausPar[3];
+	TF1 *fOtrxGaus=new TF1("trxOGaus","gaus",-0.055,-0.03);
+	trXhist->Fit("trxOGaus","R","ep",-0.055,-0.03);
+	fOtrxGaus->GetParameters(fOtrxGausPar);
+
+	double_t fOtrxCrystalPar[5];
+	TF1 *fOtrxCrystal=new TF1("fOtrxCrystal","crystalball",-0.07,-0.03);
+	fOtrxCrystal->SetParameters(fOtrxGausPar[0],fOtrxGausPar[1],fOtrxGausPar[2],1,1);
+	trXhist->Fit("fOtrxCrystal","R","ep",-0.07,-0.03);
+	fOtrxCrystal->GetParameters(fOtrxCrystalPar);
+
+
+	double_t fH2OtrxCrystalPar[10];
+	std::copy(fHtrxCrystalPar,fHtrxCrystalPar+5,fH2OtrxCrystalPar);
+	std::copy(fOtrxCrystalPar,fOtrxCrystalPar+5,fH2OtrxCrystalPar+5);
+
+	TF1 *fH2OtrxCrystal=new TF1("fH2OtrxCrystal","crystalball(0)+crystalball(5)",-0.14,-0.0);
+	fH2OtrxCrystal->SetParameters(fH2OtrxCrystalPar);
+	fH2OtrxCrystal->SetParNames("H_Constant","H_Mean","H_sigma","H_Alpha","H_N","O_Constant","O_Mean","O_sigma","O_Alpha","O_N");
+	std::cout<<"\n tr.x double crystal ball fit"<<std::endl;
+	trXhist->Fit("fH2OtrxCrystal","R","ep",-0.14,-0.0);
+
+
+/*	// fit the tr.x parameter
 	TF1 *CarbonSpectrumF=new TF1 ("myCrystalBall","crystalball(0)+crystalball(5)",-0.15,-0.0);
 	CarbonSpectrumF->SetLineColor(2);
 	CarbonSpectrumF->SetLineWidth(3);
@@ -56,7 +95,7 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	CarbonSpectrumF->SetParNames("H_Constant","H_Mean","H_sigma","H_Alpha","H_N","O_Constant","O_Mean","O_sigma","O_Alpha","O_N");
 	std::cout<<"\n tr.x double crystal ball fit"<<std::endl;
 	trXhist->Fit("myCrystalBall","","ep",-0.15,-0.0);
-	CarbonSpectrumF->Draw("same");
+	CarbonSpectrumF->Draw("same");*/
 	gPad->SetLogy(1);
 
 	c0->cd(4);

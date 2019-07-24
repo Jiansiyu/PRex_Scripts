@@ -80,7 +80,7 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 
 
 	TF1 *fOGaus=new TF1("fOGaus","gaus(0)",-0.005,-0.003);  // get the gaus fit for each individual peak, and use the paramater for the crystal ball
-	golddPhist->Fit("fOGaus","R","ep",-0.005,-0.003);
+	golddPhist->Fit("fOGaus","RQ","ep",-0.005,-0.003);
 	double_t a[3];
 	fOGaus->GetParameters(a);
 	std::cout<<a[0]<<"  "<<a[1]<<"   "<<a[2]<<std::endl;
@@ -88,19 +88,19 @@ void CarbonCrystalBallFit(std::string HRSArm="L"){
 	// add the single crystal ball function fit, used for extract the fit paramaters;
 	TF1 *fOCrystal=new TF1("fOCrystal","crystalball",-0.0065,-0.003);  // get the gaus fit for each individual peak, and use the paramater for the crystal ball
 	fOCrystal->SetParameters(a[0],a[1],a[2],1.64,1.1615);
-	golddPhist->Fit("fOCrystal","R","ep",-0.0065,-0.003);
+	golddPhist->Fit("fOCrystal","RQ","ep",-0.0065,-0.003);
 	double_t fOCrystalPar[5];
 	fOCrystal->GetParameters(fOCrystalPar);
 
 	//  get the fit result for the H peak
 	TF1 *fHGaus=new TF1("fHGaus","gaus",-0.008,-0.0068);
-	golddPhist->Fit("fHGaus","R","ep",-0.008,-0.0068);
+	golddPhist->Fit("fHGaus","RQ","ep",-0.008,-0.0068);
 	double_t fHGausPar[3];
 	fHGaus->GetParameters(fHGausPar);
 
 	TF1 *fHCrystal=new TF1("fHCrystal","crystalball",-0.01,-0.0068);
 	fHCrystal->SetParameters(fHGausPar[0],fHGausPar[1],fHGausPar[2],1.64,1.1615);
-	golddPhist->Fit("fHCrystal","R","ep",-0.01,-0.0068);
+	golddPhist->Fit("fHCrystal","RQ","ep",-0.01,-0.0068);
 	double_t fHCrystalPar[5];
 	fHCrystal->GetParameters(fHCrystalPar);
 
