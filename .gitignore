@@ -4,5 +4,8 @@
 *.d
 *.exe
 *.dat
+Debug/*
+TrackAlignment/AlignmentDataGenerator/*.txt
+TrackAlignment/AlignmentDataGenerator/*.jpg
+GEMEventDisplay/result/*
 
-/Debug/
