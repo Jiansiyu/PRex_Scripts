@@ -414,6 +414,8 @@ void rootReader(TString fname="test_20532.root"){
 
 	HitVectX_Z.shrink_to_fit();
 	HitVectY_Z.shrink_to_fit();
+
+/*
 #ifdef __DEBUG
 	TLine *beamcenter=new TLine(0,positionZpos[6],0,0);
 	beamcenter->SetLineWidth(1);
@@ -534,14 +536,13 @@ void rootReader(TString fname="test_20532.root"){
 	for(auto hit = GEMHisto_yz.begin();hit != GEMHisto_yz.end();hit++){
 		hit->second->Delete();
 	}
-	trackingHut_xz->Delete();
-	trackingHut_yz->Delete();
 
+vdcplane_xz->Delete();
 	// plot all the 2D staff in anothe canvas
 	// all the data should have been saved in the vector
 	//if(true)
 
-
+*/
 
 	Bool_t GoodHitFlag_XZ=kFALSE;
 	Bool_t GoodHitFlag_YZ=kFALSE;
@@ -576,7 +577,7 @@ void rootReader(TString fname="test_20532.root"){
 			eventCanvas2D->cd(2);
 #endif
 			TH2F *trackFitXZ_invert=new TH2F("zx","zx",1000,-0,3.0,2000,-0.4,0.4);
-			trackFitXZ_invert->Clear();
+
 			for (auto chamberIter=HitArrayX_Z.begin();chamberIter!=HitArrayX_Z.end();chamberIter++){
 				trackFitXZ_invert->Fill(chamberIter->second[0].Y(),chamberIter->second[0].X());
 			}
@@ -586,6 +587,8 @@ void rootReader(TString fname="test_20532.root"){
 			trackFitXZ_invert->Fit("pol1");
 			TF1 *lFitFunctionXZ=trackFitXZ_invert->GetFunction("pol1");
 			TF1 *lFitFunctionZX=trackFitXZ->GetFunction("pol1");
+
+//			trackFitXZ_invert->Delete();
 
 			Double_t a=lFitFunctionXZ->GetChisquare() > lFitFunctionZX->GetChisquare() ? lFitFunctionZX->GetChisquare():lFitFunctionXZ->GetChisquare();
 
@@ -603,21 +606,22 @@ void rootReader(TString fname="test_20532.root"){
 			}else{
 				GoodHitFlag_XZ=kFALSE;
 			}
-			std::cout<< a<<std::endl;
 #ifdef __DEBUG
+			std::cout<< a<<std::endl;
 			trackFitXZ_invert->Draw();
 #endif
 			//eventCanvas2D->Update();
 
 			lFitFunctionXZ->Delete();
 			lFitFunctionZX->Delete();
+			trackFitXZ_invert->Delete();
 
 		}
 #ifdef __DEBUG
 		tracking2D_XZ->Delete();
 #endif
 	}
-
+	trackFitXZ->Delete();
 
 	// check the Y-Z dimension
 	{
@@ -679,20 +683,22 @@ void rootReader(TString fname="test_20532.root"){
 				GoodHitFlag_YZ=kFALSE;
 			}
 
-			std::cout<< a<<std::endl;
+//			trackFitYZ_invert->Delete();
 #ifdef __DEBUG
+			std::cout<< a<<std::endl;
 			trackFitYZ_invert->Draw();
 #endif
 			lFitFunctionYZ->Delete();
 			lFitFunctionZY->Delete();
-			trackFitYZ_invert->Clear();
+			trackFitYZ_invert->Delete();
+
 
 		}
 #ifdef __DEBUG
 		tracking2D_YZ->Delete();
 #endif
 	}
-
+	trackFitYZ->Delete();
 #ifdef __DEBUG
 	eventCanvas->Modified();
 	eventCanvas->Update();
@@ -761,16 +767,13 @@ void rootReader(TString fname="test_20532.root"){
 		eventCanvas->Clear();
 		eventCanvas2D->Divide(2, 2);
 		eventCanvas->Divide(1, 2);
-#endif
-		// collect memorys
-		trackFitXZ->Delete();
-		trackFitYZ->Delete();
-#ifdef __DEBUG
+
+
 		beamcenter->Delete();
 #endif
-//		for(auto i = GEMHisto_xz.begin(); i != GEMHisto_xz.end();i++) i->second->Delete();
-//		for(auto i = GEMHisto_yz.begin(); i != GEMHisto_yz.end();i++) i->second->Delete();
-		vdcplane_xz->Delete();
+		for(auto i = GEMHisto_xz.begin(); i != GEMHisto_xz.end();i++) i->second->Delete();
+		for(auto i = GEMHisto_yz.begin(); i != GEMHisto_yz.end();i++) i->second->Delete();
+
 		HitArrayX_Z.clear();
 		HitArrayY_Z.clear();
 		HitVectX_Z.clear();
