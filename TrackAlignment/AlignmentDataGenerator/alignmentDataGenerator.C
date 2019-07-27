@@ -20,6 +20,7 @@
 #include <numeric>
 #include <TMatrixD.h>
 #include <TVector2.h>
+#include <TVector3.h>
 #include <TH1.h>
 #include <stdio.h>
 #include <fstream>
@@ -29,6 +30,7 @@
 #define _ROOTREADER_MAX_GEM_CHAMBER 7
 #define _ROOTREADER_MAX_TSAMPLE 3
 
+//	#define __DEBUG
 
 std::vector<std::vector<Int_t>> splitCluster(std::vector<Int_t> StripsVec,Int_t clusterSizeCut=2){
 	std::sort(StripsVec.begin(),StripsVec.end());
@@ -69,13 +71,13 @@ void rootReader(TString fname="test_20532.root"){
 	FILE *trackXZ=fopen("trackxz.txt","w");
 	FILE *trackYZ=fopen("trackyz.txt","w");
 	FILE *trackXYZ=fopen("trackxyz.txt","w");
-
+#ifdef __DEBUG
 	TCanvas *eventCanvas=new TCanvas("CanvasDisplay","CanvasDisplay",1000,1000);
 	eventCanvas->Divide(1,2);
 
 	TCanvas *eventCanvas2D=new TCanvas("CanvasDisplay2D","CanvasDisplay2D",1000,1000);
 	eventCanvas2D->Divide(2,2);
-
+#endif
 	if(fname.IsNull()){
 		std::cout<<"Please input the file name"<<std::endl;
 	}
@@ -212,13 +214,13 @@ void rootReader(TString fname="test_20532.root"){
 
 	for (auto chamberID : chamberList){
 		for(auto adc_sample : TsampleLit[chamberID]){
-			std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<" Working on : Chamber"<< chamberID<<"	sample"<<adc_sample<<std::endl;
+			//std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<" Working on : Chamber"<< chamberID<<"	sample"<<adc_sample<<std::endl;
 
 			std::string fstripNumFormat(Form("Ndata.%s.x%d.strip.number",gem_root_header.c_str(),chamberID));
 			if(PRex_GEM_tree->GetListOfBranches()->Contains(fstripNumFormat.c_str())){
 				PRex_GEM_tree->SetBranchAddress(fstripNumFormat.c_str(),&fstripNum[chamberID]);
 			}
-			std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<std::endl;
+			//std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<std::endl;
 			// load the strip number informations
 			fstrip[chamberID]=new double_t [1000];//[(fstripNum[chamberID])];
 			std::string fstripFormat(Form("%s.x%d.strip.number",gem_root_header.c_str(),chamberID));
@@ -239,7 +241,7 @@ void rootReader(TString fname="test_20532.root"){
 		}
 	}
 
-	std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<std::endl;
+	//std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<std::endl;
 	// read the data for Y dimension
     //  chamber / value
 	std::map<int16_t,double_t *>fstrip_y;
@@ -262,28 +264,14 @@ void rootReader(TString fname="test_20532.root"){
 		}
 	}
 
-	std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<std::endl;
 	// read the vdc values
-
 	std::cout<<"Total Entries:"<<PRex_GEM_tree->GetEntries()<<std::endl;
 	PRex_GEM_tree->Show(1);
 
 	for(auto entry=1;entry<(PRex_GEM_tree->GetEntries());entry++){
 
-
-
 	// load the data to the buff
 	PRex_GEM_tree->GetEntry(entry);
-	std::cout<<"[Debug]::"<<__FUNCTION__<<"  LINE::"<<__LINE__<<std::endl;
-	for(auto chamberID:chamberList){
-		std::cout<<"Chamber: "<<chamberID<<std::endl;
-		// print out the fired strips
-		std::cout<<"	fired strips("<<fstripNum[chamberID]<<") :: ";
-		for(int i =0 ; i < fstripNum[chamberID];i++){
-			std::cout<<fstrip[chamberID][i]<<" ";
-		}
-		std::cout<<std::endl;
-	}
 
 	// load the data to plot
 	const double_t positionshift[]={0,256.0,256.0,256.0,768.0,768.0,768.0};   //  the center of the detector
@@ -291,7 +279,6 @@ void rootReader(TString fname="test_20532.root"){
 
 	const double_t positionshift_x[]={0,256.0,256.0,256.0,768.0,768.0,768.0};   //  the center of the detector
 	const double_t positionshift_y[]={0,128.0,128.0,128.0,640.0,640.0,640.0};
-
 
 	//---------------------------------------------------------------
 	// select hit for alignment algorithm
@@ -310,11 +297,16 @@ void rootReader(TString fname="test_20532.root"){
 	std::map<Int_t,std::vector<TVector2>> HitArrayY_Z;
 	std::vector<TVector2> HitVectX_Z;
 	std::vector<TVector2> HitVectY_Z;
-
+	HitArrayX_Z.clear();
+	HitArrayY_Z.clear();
+	HitVectX_Z.clear();
+	HitVectY_Z.clear();
 
 	// write the data for y-z dimension
 	std::map<int16_t,TH1F *> GEMHisto_xz;
 	std::map<int16_t,TH1F *> GEMHisto_yz;
+	GEMHisto_xz.clear();
+	GEMHisto_yz.clear();
 
 	for(auto chamberID : chamberList){
 
@@ -335,6 +327,8 @@ void rootReader(TString fname="test_20532.root"){
 
 		auto clusterVec_x=splitCluster(strips_buff_x);
 		auto clusterVec_y=splitCluster(strips_buff_y);
+		strips_buff_x.clear();
+		strips_buff_y.clear();
 
 		if(clusterVec_x.size()!=0){
 			if(!(GEMHisto_xz.find(chamberID)!=GEMHisto_xz.end())){
@@ -418,34 +412,48 @@ void rootReader(TString fname="test_20532.root"){
 		}
 	}
 
+	HitVectX_Z.shrink_to_fit();
+	HitVectY_Z.shrink_to_fit();
+#ifdef __DEBUG
 	TLine *beamcenter=new TLine(0,positionZpos[6],0,0);
 	beamcenter->SetLineWidth(1);
 	beamcenter->SetLineColor(45);
+
 	eventCanvas->SetTitle(Form("Tracking_Detector_Run%d_Evt%d",fEvtNum,fRun));
 	eventCanvas->cd(1);
+#endif
 	TH1F *trackingHut_xz=new TH1F("Tracking X-Z ","Tracking X-Z",2/0.00004,-1.1,1.1);
 	trackingHut_xz->GetYaxis()->SetRangeUser(0,2.8);
+#ifdef __DEBUG
 	trackingHut_xz->Draw("histp");
 //	trackingHut_xz->Delete();
 	// draw beam center
 	beamcenter->Draw("same");
+#endif
 	// draw VDC
 	TLine *vdcplane_xz=new TLine(-1.059,0,1.059,0);
 	vdcplane_xz->SetLineWidth(2);
+#ifdef __DEBUG
 	vdcplane_xz->Draw("same");
+#endif
 
 	// draw GEM planestd::map<int16_t,TLine *>
 	std::map<int16_t,TLine *>GEMPlane_xz;
 	for (int i =1; i <=6;i++){
 		GEMPlane_xz[i]=new TLine(-positionshift_x[i]*0.0004,positionZpos[i],positionshift_x[i]*0.0004,positionZpos[i]);
 		GEMPlane_xz[i]->SetLineWidth(2);
+#ifdef __DEBUG
+
 		GEMPlane_xz[i]->Draw("same");
+#endif
 	}
 
+#ifdef __DEBUG
 	for(auto histo=GEMHisto_xz.begin();histo!=GEMHisto_xz.end();histo++){
 		histo->second->Draw("HISTPsame");
 //		histo->second->Delete();
 	}
+#endif
 
 	// draw VDC
 	if(fvdcXNum>0){
@@ -455,35 +463,47 @@ void rootReader(TString fname="test_20532.root"){
 		vdchisto->SetMarkerStyle(20);
 		vdchisto->SetMarkerColor(2);
 		vdchisto->SetMarkerSize(1);
+#ifdef __DEBUG
 		vdchisto->Draw("HISTPsame");
-//		vdchisto->Delete();
+#endif
+		//		vdchisto->Delete();
 		TLine *vdcTrack=new TLine(fvdcX[0],0.001,fvdcX[0]+positionZpos[6]*fvdc_th[0],positionZpos[6]);
 		vdcTrack->SetLineWidth(1);
 		vdcTrack->SetLineColor(6);
+#ifdef __DEBUG
 		vdcTrack->Draw("HISTPsame");
+#endif
 	}
 
 	// draw the y-z plane
+#ifdef __DEBUG
 	eventCanvas->cd(2);
+#endif
 	TH1F *trackingHut_yz=new TH1F("Tracking Y-Z ","Tracking Y-Z",2/0.00004,-1.0,1.0);
 	trackingHut_yz->GetYaxis()->SetRangeUser(0,2.8);
+#ifdef __DEBUG
 	trackingHut_yz->Draw("histp");
+
 //	trackingHut_yz->Delete();
 	// draw beam center
 	beamcenter->Draw("same");
-
+#endif
 	// draw VDC
 	TLine *vdcplane_yz=new TLine(-0.2,0,0.2,0);
 	vdcplane_yz->SetLineWidth(2);
+#ifdef __DEBUG
 	vdcplane_yz->Draw("same");
-
+#endif
 	std::map<int16_t,TLine *>GEMPlane_yz;
 	for (int i =1; i <=6;i++){
 		GEMPlane_yz[i]=new TLine(-positionshift_y[i]*0.0004,positionZpos[i],positionshift_y[i]*0.0004,positionZpos[i]);
 		GEMPlane_yz[i]->SetLineWidth(2);
+#ifdef __DEBUG
 		GEMPlane_yz[i]->Draw("same");
+#endif
 	}
 
+#ifdef __DEBUG
 	//draw GEM
 	for(auto histo=GEMHisto_yz.begin();histo!=GEMHisto_yz.end();histo++){
 		histo->second->Draw("HISTPsame");
@@ -506,7 +526,7 @@ void rootReader(TString fname="test_20532.root"){
 		vdcTrack->Draw("Psame");
 	}
 	eventCanvas->Update();
-
+#endif
 	// release the mem
 	for(auto hit = GEMHisto_xz.begin();hit != GEMHisto_xz.end();hit++){
 		hit->second->Delete();
@@ -527,6 +547,7 @@ void rootReader(TString fname="test_20532.root"){
 	Bool_t GoodHitFlag_YZ=kFALSE;
 
 	{
+#ifdef __DEBUG
 		eventCanvas2D->cd(1);
 		TH2F *tracking2D_XZ=new TH2F("Tracking2D","Tracking2D",2000,-0.4,0.4,1000,-0,3.0);
 		tracking2D_XZ->SetMarkerSize(1);
@@ -538,6 +559,7 @@ void rootReader(TString fname="test_20532.root"){
 		if(fvdcXNum!=0)
 		tracking2D_XZ->Fill(fvdcX[0],0.00001);
 		tracking2D_XZ->Draw();
+#endif
 
 		if((HitArrayX_Z.size()==6)&& (fvdcXNum==1)){
 			for (auto chamberIter=HitArrayX_Z.begin();chamberIter!=HitArrayX_Z.end();chamberIter++){
@@ -548,10 +570,13 @@ void rootReader(TString fname="test_20532.root"){
 			trackFitXZ->SetMarkerColor(1);
 			trackFitXZ->SetMarkerStyle(20);
 			trackFitXZ->Fit("pol1");
+#ifdef __DEBUG
 			trackFitXZ->Draw("same");
 
 			eventCanvas2D->cd(2);
+#endif
 			TH2F *trackFitXZ_invert=new TH2F("zx","zx",1000,-0,3.0,2000,-0.4,0.4);
+			trackFitXZ_invert->Clear();
 			for (auto chamberIter=HitArrayX_Z.begin();chamberIter!=HitArrayX_Z.end();chamberIter++){
 				trackFitXZ_invert->Fill(chamberIter->second[0].Y(),chamberIter->second[0].X());
 			}
@@ -568,31 +593,37 @@ void rootReader(TString fname="test_20532.root"){
 			if(a<1000)
 			{
 				GoodHitFlag_XZ=kTRUE;
-				std::string a(Form("%d,",entry));
-				for (auto chamberIter=HitArrayX_Z.begin();chamberIter!=HitArrayX_Z.end();chamberIter++){
-					a.append(Form(" %d, %0.8f, %0.8f,",chamberIter->first,chamberIter->second[0].X(),chamberIter->second[0].Y()));
-				}
-				a.append("\n");
-				fprintf(trackXZ,"%s",a.c_str());
-				a.clear();
+//				std::string a(Form("%d,",entry));
+//				for (auto chamberIter=HitArrayX_Z.begin();chamberIter!=HitArrayX_Z.end();chamberIter++){
+//					a.append(Form(" %d, %0.8f, %0.8f,",chamberIter->first,chamberIter->second[0].X(),chamberIter->second[0].Y()));
+//				}
+//				a.append("\n");
+//				fprintf(trackXZ,"%s",a.c_str());
+//				a.clear();
 			}else{
 				GoodHitFlag_XZ=kFALSE;
 			}
 			std::cout<< a<<std::endl;
+#ifdef __DEBUG
 			trackFitXZ_invert->Draw();
+#endif
 			//eventCanvas2D->Update();
 
 			lFitFunctionXZ->Delete();
 			lFitFunctionZX->Delete();
 
 		}
+#ifdef __DEBUG
 		tracking2D_XZ->Delete();
+#endif
 	}
 
 
 	// check the Y-Z dimension
 	{
+#ifdef __DEBUG
 		eventCanvas2D->cd(3);
+
 		TH2F *tracking2D_YZ=new TH2F("Tracking2D_YZ","Tracking2D_YZ",2000,-0.4,0.4,1000,-0,3.0);
 		tracking2D_YZ->SetMarkerSize(1);
 		tracking2D_YZ->SetMarkerColor(2);
@@ -604,8 +635,9 @@ void rootReader(TString fname="test_20532.root"){
 		// if there is a hit on the vdc
 		if(fvdcYNum!=0)
 			tracking2D_YZ->Fill(fvdcY[0],0.0);
-	    tracking2D_YZ->Draw();
 
+	    tracking2D_YZ->Draw();
+#endif
 		if((HitArrayY_Z.size()==6)&& (fvdcYNum==1))
 		{
 			for (auto chamberIter=HitArrayY_Z.begin();chamberIter!=HitArrayY_Z.end();chamberIter++){
@@ -615,9 +647,11 @@ void rootReader(TString fname="test_20532.root"){
 			trackFitYZ->SetMarkerSize(1);
 			trackFitYZ->SetMarkerStyle(20);
 			trackFitYZ->Fit("pol1");
+#ifdef __DEBUG
 			trackFitYZ->Draw("same");
 
 			eventCanvas2D->cd(4);
+#endif
 			TH2F *trackFitYZ_invert=new TH2F("zY","zY",1000,-0,3.0,2000,-0.4,0.4);
 			for (auto chamberIter=HitArrayY_Z.begin();chamberIter!=HitArrayY_Z.end();chamberIter++){
 				trackFitYZ_invert->Fill(chamberIter->second[0].Y(),chamberIter->second[0].X());
@@ -634,54 +668,118 @@ void rootReader(TString fname="test_20532.root"){
 			// write candidate
 			if(a<1500){
 				GoodHitFlag_YZ=kTRUE;
-				std::string a(Form("%d,	",entry));
-				for (auto chamberIter=HitArrayY_Z.begin();chamberIter!=HitArrayY_Z.end();chamberIter++){
-					a.append(Form("	%d,	%f,	%f,",chamberIter->first,chamberIter->second[0].X(),chamberIter->second[0].Y()));
-				}
-				a.append("\n");
-				fprintf(trackYZ,"%s",a.c_str());
+//				std::string a(Form("%d,	",entry));
+//				for (auto chamberIter=HitArrayY_Z.begin();chamberIter!=HitArrayY_Z.end();chamberIter++){
+//					a.append(Form("	%d,	%f,	%f,",chamberIter->first,chamberIter->second[0].X(),chamberIter->second[0].Y()));
+//				}
+//				a.append("\n");
+//				fprintf(trackYZ,"%s",a.c_str());
+//				a.clear();
 			}else{
 				GoodHitFlag_YZ=kFALSE;
 			}
 
 			std::cout<< a<<std::endl;
+#ifdef __DEBUG
 			trackFitYZ_invert->Draw();
-
+#endif
 			lFitFunctionYZ->Delete();
 			lFitFunctionZY->Delete();
 			trackFitYZ_invert->Clear();
 
 		}
+#ifdef __DEBUG
 		tracking2D_YZ->Delete();
+#endif
 	}
 
+#ifdef __DEBUG
 	eventCanvas->Modified();
 	eventCanvas->Update();
-//	eventCanvas2D->Modified();
+#endif
+	//	eventCanvas2D->Modified();
 //	eventCanvas2D->Update();
 		if ((fvdcXNum > 0 || fvdcYNum > 0) && GoodHitFlag_XZ
 				&& GoodHitFlag_YZ) {
-//			getchar();
-			std::cout << "Entry:" << entry << std::endl;
-			eventCanvas->SaveAs(Form("result/PRex_Evt%d.jpg", entry));
+
+			//std::cout << "Entry:" << entry << std::endl;
+			//eventCanvas->SaveAs(Form("result/PRex_Evt%d.jpg", entry));
+
 			// save the result in files
+			// need to write the data for vdc position, angle, and the position for all the GEM detectors
+			// [VDC[code 0] th ph x y z] [GEMID x y z] etc
 
+			// write the VDC result
+			std::string line;
+			assert(fvdcXNum==1);
+			assert(fvdcYNum==1);
 
+			line.append(Form("0, %f, %f, %f, %f, %f, ",fvdc_th[0],fvdc_ph[0],fvdcX[0],fvdcY[0],(double_t)0.0));
 
+			// form the GEM data
+			assert(HitVectX_Z.size()==6);
+			assert(HitVectY_Z.size()==6);
+			std::vector<TVector3> Hit3D;
+			std::map<int8_t, TVector3> Hit3DMap;
+			for(auto hitXZ : HitVectX_Z){
+				for(auto hitYZ : HitVectY_Z){
+					if(hitXZ.Y()==hitYZ.Y()){
+						TVector3 a(hitXZ.X(),hitYZ.X(),hitXZ.Y());
+						Hit3D.push_back(a);
+						for(int i =0; i <7;i++){
+							if(positionZpos[i]==hitXZ.Y()){
+							  Hit3DMap[i]=a;
+							}
+						}
+
+					}
+				}
+			}
+
+			// check all the six detector have hit
+			assert(Hit3D.size()==6);
+			assert(Hit3DMap.size()==6);
+			//write the data to the string
+			for(auto hitIter=Hit3DMap.begin(); hitIter != Hit3DMap.end() ; hitIter++){
+				int16_t detectorID = hitIter->first;
+				double_t x=hitIter->second.X();
+				double_t y=hitIter->second.Y();
+				double_t z=hitIter->second.Z();
+				line.append(Form(" %d, %f, %f, %f, ",detectorID,x,y,z)); // detectorID, x, y, z
+			}
+			line.append("\n");
+			fprintf(trackXYZ,"%s",line.c_str());
+			line.clear();
+			Hit3D.clear();
+			Hit3DMap.clear();
+			HitVectX_Z.clear();
+			HitVectY_Z.clear();
 		}
-
+		// end of write txt file
+#ifdef __DEBUG
 		eventCanvas2D->Clear();
 		eventCanvas->Clear();
 		eventCanvas2D->Divide(2, 2);
 		eventCanvas->Divide(1, 2);
+#endif
 		// collect memorys
 		trackFitXZ->Delete();
 		trackFitYZ->Delete();
+#ifdef __DEBUG
 		beamcenter->Delete();
+#endif
+//		for(auto i = GEMHisto_xz.begin(); i != GEMHisto_xz.end();i++) i->second->Delete();
+//		for(auto i = GEMHisto_yz.begin(); i != GEMHisto_yz.end();i++) i->second->Delete();
 		vdcplane_xz->Delete();
+		HitArrayX_Z.clear();
+		HitArrayY_Z.clear();
+		HitVectX_Z.clear();
+		HitVectY_Z.clear();
+
 	}
 
 
 	fclose(trackXZ);
 	fclose(trackYZ);
+	fclose(trackXYZ);
 }
