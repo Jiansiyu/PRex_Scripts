@@ -132,428 +132,6 @@ int LoadDetectorHit(std::string fname="trackxyz.txt") {
 }
 
 
-// make an invert fit would be better
-double_t linearFit(std::vector<HitStruct> DetHit, double_t *x,std::string dimension="xz"){
-
-	//get the average
-	assert(DetHit.size()=6);
-
-	std::vector<HitStruct> subGEM(DetHit.begin()++,DetHit.end());  // get the second GEM to the end . the first one will be take as reference, will not going to the fit
-
-	double_t Xaverage, Yaverage, Zaverage;
-	double_t Xsum=0.0,Ysum=0.0, Zsum=0.0;
-	double_t HitNum=(double_t)subGEM.size();
-
-	for(auto Hit : subGEM){
-		Xsum+=Hit.GetX();
-		Ysum+=Hit.GetY();
-		Zsum+=Hit.GetZ();
-	}
-
-	Xaverage=Xsum/HitNum;
-	Yaverage=Ysum/HitNum;
-	Zaverage=Zsum/HitNum;
-
-	// Calculate the slop
-	double_t fitSlop=0.0;
-
-	// loop on the hit
-	double_t SlopXZSum=0.0;
-	double_t SlopXSum=0.0;
-	for(auto Hit : subGEM){
-		// this is a X-Z fit
-		SlopXZSum+=(Hit.GetX()-Xaverage)*(Hit.GetZ()-Zaverage);
-		SlopXSum+=(Hit.GetX()-Xaverage)*(Hit.GetX()-Xaverage);
-	}
-    fitSlop=SlopXZSum/SlopXSum;
-
-    // generate the functions
-    // y-y0=m(x-x0)=> y=m(x-x0)+y0
-    return fitSlop*(x[0]-DetHit[0].GetX())+DetHit[0].GetZ();
-}
-
-double_t linearInvertFit(std::vector<HitStruct> DetHit, double_t *x,double_t &fitpar, std::string dimension="xz"){
-
-	//get the average
-	assert(DetHit.size()==6);
-
-	std::vector<HitStruct> subGEM(DetHit.begin()+1,DetHit.end());  // get the second GEM to the end . the first one will be take as reference, will not going to the fit
-
-	double_t Xaverage, Yaverage, Zaverage;
-	double_t Xsum=0.0,Ysum=0.0, Zsum=0.0;
-	double_t HitNum=(double_t)subGEM.size();
-
-	for(auto Hit : subGEM){
-		Xsum+=Hit.GetX();
-		Ysum+=Hit.GetY();
-		Zsum+=Hit.GetZ();
-	}
-
-	Xaverage=Xsum/HitNum;
-	Yaverage=Ysum/HitNum;
-	Zaverage=Zsum/HitNum;
-
-	// Calculate the slop
-	double_t fitSlop=0.0;
-
-	// loop on the hit
-	double_t SlopXZSum=0.0;
-	double_t SlopXSum=0.0;
-	double_t SlopZSum=0.0;
-
-	for(auto Hit : subGEM){
-		// this is a X-Z fit
-		SlopXZSum+=(Hit.GetX()-Xaverage)*(Hit.GetZ()-Zaverage);
-		SlopXSum+=(Hit.GetX()-Xaverage)*(Hit.GetX()-Xaverage);
-		SlopZSum+=(Hit.GetZ()-Zaverage)*(Hit.GetZ()-Zaverage);
-	}
-    fitSlop=SlopXZSum/SlopZSum;
-    fitpar=fitSlop;
-
-    // generate the functions
-    // x-x0=m(z-z0)
-    return fitSlop*(x[0]-DetHit[0].GetZ())+DetHit[0].GetX();
-}
-
-
-// all the fit applied on the Z-X dimension, in order to solve the INFINIT issues
-// create custom residue functions
-double_t GetResidual(std::vector<HitStruct> DetHit,std::string dimension="xz"){
-	// calculate the distance from the fit functions
-	//get the average
-	assert(DetHit.size()==6);
-
-	double_t residualF=0.0;
-	double_t residualParSq=0.0;
-
-	double_t residue=0.0;
-	for(auto Hit : DetHit){
-		double_t x[1]={Hit.GetZ()};
-		double_t slop=0.0;
-		residualF=linearInvertFit(DetHit,x,slop)-Hit.GetX();
-
-		double_t a=slop;
-		double_t b=-1.0;
-
-		double_t deltaD=residualF/(std::sqrt(a*a+b*b));
-		residue+=deltaD*deltaD;
-//		std::cout<<"Distance "<<std::abs(deltaD)<<std::endl;
-	}
-return residue;
-}
-
-
-
-
-double_t FitTest(){
-
-	TCanvas *a=new TCanvas("Fit","Fit",1000,1000);
-	a->cd();
-	a->Draw();
-
-	TH2F *DetHist;
-
-	TH2F *FitHist;
-	for (auto Event : DetHitBuff){
-		DetHist=new TH2F("Initial Hit","Initial Hit",1000, -0, 3.0, 2000, -0.4, 0.4);
-		DetHist->SetMarkerSize(1);
-		DetHist->SetMarkerStyle(20);
-
-		FitHist=new TH2F("Fit Hit","Fit Hit",1000, -0, 3.0, 2000, -0.4, 0.4);
-		FitHist->SetMarkerSize(1);
-		FitHist->SetMarkerStyle(20);
-		FitHist->SetMarkerColor(3);
-
-		for(auto Hit:Event){
-			DetHist->Fill(Hit.GetZ(),Hit.GetX());
-		}
-		DetHist->Draw();
-
-		std::vector<HitStruct> gemHit(Event.begin()+1,Event.end());
-		for(auto Hit:gemHit){
-			std::cout<<gemHit.size()<<std::endl;
-			double_t a[1]={Hit.GetZ()};
-			double_t slop=0.0;
-			FitHist->Fill(Hit.GetZ(),linearInvertFit(gemHit,a,slop));
-			GetResidual(gemHit);
-			std::cout<<"slop:"<<slop<<std::endl;
-		}
-		FitHist->Draw("same");
-		a->Update();
-		getchar();
-
-	}
-	return 0.0;
-}
-
-void fcn_residual(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag){
-	// correction matrix     [0] [1] [2]
-	// firt ste, only take the tranlation into consideration
-	//
-	//   6 GEM detetors  5 need to be aligned
-	//   GEM 2  X par[0]  Y par[1]
-	//   GEM 3  X par[2]  Y par[3]
-	//   GEM 4  X par[4]  Y par[5]
-	//   GEM 5  X par[6]  Y par[7]
-	//   GEM 6  X par[8]  Y par[9]
-	Double_t chisq=0.0;
-
-	// loop on the event and apply the corretion
-	for(auto Event : DetHitBuff){
-		std::vector<HitStruct> gemEvent(Event.begin()+1, Event.end());
-		assert(gemEvent.size()==6);
-		// appli the correction matrix on the GEM detectors
-		std::vector<HitStruct> gemcorrEvent(Event.begin()+2, Event.end());
-		assert(gemcorrEvent.size()==5);
-
-		// create vector of GEMs that contain the correction parameters
-		std::vector<HitStruct> gemCorrected;
-
-		gemCorrected.push_back(gemEvent[0]);
-		for(auto Hit : gemcorrEvent){
-			// start from GEM 2
-			HitStruct a(Hit.GetDetectorID(),Hit.GetX()-par[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-par[Hit.GetDetectorID()-1]);
-			gemCorrected.push_back(a);
-		}
-
-		chisq+=GetResidual(gemCorrected);
-
-	}
-	f=chisq;
-}
-
-double_t GetDeltD(std::vector<HitStruct> DetHit,std::string dimension="xz",int detectorID=0){
-	//
-	// calculate the distance from the fit functions
-	//get the average
-	assert(DetHit.size()==6);
-
-	double_t residualF=0.0;
-	double_t residualParSq=0.0;
-
-	double_t residue=0.0;
-	for(auto Hit : DetHit){
-		double_t x[1]={Hit.GetZ()};
-		double_t slop=0.0;
-		residualF=linearInvertFit(DetHit,x,slop)-Hit.GetX();
-
-		double_t a=slop;
-		double_t b=-1.0;
-
-		double_t deltaD=residualF/(std::sqrt(a*a+b*b));
-		residue+=deltaD;
-		if((detectorID!=0) && (Hit.GetDetectorID()==detectorID)) return deltaD;
-//		std::cout<<"Distance "<<std::abs(deltaD)<<std::endl;
-	}
-return residue;
-}
-
-double_t MinimizerCheck(double_t *par, TCanvas *a){
-	a->Divide(2,1);
-	a->cd(1);
-
-	for(int i =0 ; i < 10 ; i ++) std::cout<<par[i]<<std::endl;
-	TH1F *residualBefore=new TH1F("ResdualBefore","ResdualBefore",100,-0.001,0.001);
-	residualBefore->GetYaxis()->SetRangeUser(0,3000);
-	TH1F *residualAfter=new TH1F("ResdualAfter","ResdualAfter",100,residualBefore->GetXaxis()->GetXmin(),residualBefore->GetXaxis()->GetXmax());
-	residualAfter->SetLineColor(3);
-	for(auto Event : DetHitBuff){
-		std::vector<HitStruct> gemEvent(Event.begin()+1, Event.end());
-		std::vector<HitStruct> gemcorrEvent(Event.begin()+2, Event.end());
-
-		std::vector<HitStruct> gemCorrected;
-		gemCorrected.push_back(gemEvent[0]);
-	    for(auto Hit : gemcorrEvent){
-	    	HitStruct a(Hit.GetDetectorID(),Hit.GetX()-par[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-par[Hit.GetDetectorID()-1]);
-	    	gemCorrected.push_back(a);
-		}
-	    residualBefore->Fill(GetResidual(gemEvent));
-	    residualAfter->Fill(GetResidual(gemCorrected));
-
-	}
-	residualBefore->Draw();
-	residualAfter->Draw("same");
-
-	//distance check
-	a->cd(2)->Divide(1,2);
-	a->cd(2)->cd(1);
-	TH1F *deltDBeforAlignSum=new TH1F("DeltaDBefore","DeltaDBefore",100,-0.1,0.1);
-	TH1F *deltDAfterAlignSum=new TH1F("DeltaDAfter","DeltadAfter",100,-0.1,0.1);
-	deltDAfterAlignSum->SetLineColor(3);
-
-	for(auto Event : DetHitBuff){
-
-		std::vector<HitStruct> gemEvent(Event.begin()+1, Event.end());
-		std::vector<HitStruct> gemcorrEvent(Event.begin()+2, Event.end());
-
-		std::vector<HitStruct> gemCorrected;
-		gemCorrected.push_back(gemEvent[0]);
-	    for(auto Hit : gemcorrEvent){
-	    	HitStruct a(Hit.GetDetectorID(),Hit.GetX()-par[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-par[Hit.GetDetectorID()-1]);
-	    	gemCorrected.push_back(a);
-		}
-	    deltDBeforAlignSum->Fill(GetDeltD(gemEvent));
-	    deltDAfterAlignSum->Fill(GetDeltD(gemCorrected));
-	}
-	deltDBeforAlignSum->Draw();
-	deltDAfterAlignSum->Draw("same");
-
-	a->cd(2)->cd(2)->Divide(3,2);
-	TH1F *deltDBeforAlign[6];
-	TH1F *deltDAfterAlign[6];
-	for (int i =0 ; i < 6 ; i ++){
-		deltDBeforAlign[i]=new TH1F(Form("%d_before_deltaD",i),Form("%d_before_deltaD",i),100,-0.1,0.1);
-		deltDAfterAlign[i]=new TH1F(Form("%d_After_deltaD",i),Form("%d_After_deltaD",i),100,-0.1,0.1);
-	}
-	for(auto Event : DetHitBuff){
-
-		std::vector<HitStruct> gemEvent(Event.begin()+1, Event.end());
-		std::vector<HitStruct> gemcorrEvent(Event.begin()+2, Event.end());
-
-		std::vector<HitStruct> gemCorrected;
-		gemCorrected.push_back(gemEvent[0]);
-	    for(auto Hit : gemcorrEvent){
-	    	HitStruct a(Hit.GetDetectorID(),Hit.GetX()-par[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-par[Hit.GetDetectorID()-1]);
-	    	gemCorrected.push_back(a);
-		}
-	    for (auto Hit : gemEvent){
-	    	deltDBeforAlign[Hit.GetDetectorID()-1]->Fill(GetDeltD(gemEvent,"",Hit.GetDetectorID()));
-	    	deltDAfterAlign[Hit.GetDetectorID()-1]->Fill(GetDeltD(gemCorrected,"",Hit.GetDetectorID()));
-	    }
-	    deltDBeforAlignSum->Fill(GetDeltD(gemEvent));
-	    deltDAfterAlignSum->Fill(GetDeltD(gemCorrected));
-	}
-
-	for (int i =0 ; i < 6 ; i ++){
-		a->cd(2)->cd(2)->cd(i+1);
-		deltDBeforAlign[i]->Draw();
-		deltDAfterAlign[i]->SetLineColor(3);
-		deltDAfterAlign[i]->Draw("same");
-	}
-
-	a->Update();
-
-	// calculate the prediced position vs the real pos
-
-	return 0.0;
-}
-
-void TMinimer(){
-	LoadDetectorHit();      // load the raw hit from the txt file
-	gStyle->SetOptFile(1111111);
-
-	TMinuit *gMinuit=new TMinuit(10);  // initialize the minuit for 10 parameters
-	gMinuit->SetFCN(fcn_residual);
-
-	//   6 GEM detetors  5 need to be aligned
-	//   GEM 2  X par[0]  Y par[1]
-	//   GEM 3  X par[2]  Y par[3]
-	//   GEM 4  X par[4]  Y par[5]
-	//   GEM 5  X par[6]  Y par[7]
-	//   GEM 6  X par[8]  Y par[9]
-
-	double_t vstart[10]={0.0, 0.0, 0.0, 0.0, 0.0,
-			             0.0, 0.0, 0.0, 0.0, 0.0};
-
-	double_t step[10]  ={1e-06, 1e-06, 1e-06, 1e-06, 1e-06,
-			             1e-06, 1e-06, 1e-06, 1e-06, 1e-06};
-
-	                 // about the 10 degree,  for translation about 20cm
-
-//	double_t bmin[10]={vstart[0]-0.1,vstart[1]-0.1,vstart[2]-0.1,vstart[3]-0.1,vstart[4]-0.1,
-//					   vstart[5]-0.1,vstart[6]-0.1,vstart[7]-0.1,vstart[8]-0.1,vstart[9]-0.1};
-//
-//	double_t bmax[10]={vstart[0]+0.1,vstart[1]+0.1,vstart[2]+0.1,vstart[3]+0.1,vstart[4]+0.1,
-//					   vstart[5]+0.1,vstart[6]+0.1,vstart[7]+0.1,vstart[8]+0.1,vstart[9]+0.1};
-
-	double_t Binrange=0.01;
-	double_t bmin[10]={vstart[0]-Binrange,vstart[1]-Binrange,vstart[2]-Binrange,vstart[3]-Binrange,vstart[4]-Binrange,
-					   vstart[5]-Binrange,vstart[6]-Binrange,vstart[7]-Binrange,vstart[8]-Binrange,vstart[9]-Binrange};
-
-	double_t bmax[10]={vstart[0]+Binrange,vstart[1]+Binrange,vstart[2]+Binrange,vstart[3]+Binrange,vstart[4]+Binrange,
-					   vstart[5]+Binrange,vstart[6]+Binrange,vstart[7]+Binrange,vstart[8]+Binrange,vstart[9]+Binrange};
-
-	double_t arglist[10];
-	int ierflg=0;
-
-	gMinuit->mnparm( 0, "a", vstart[0],step[0],bmin[0],bmax[0],ierflg);
-	gMinuit->mnparm( 1, "b", vstart[1],step[1],bmin[1],bmax[1],ierflg);
-	gMinuit->mnparm( 2, "c", vstart[2],step[2],bmin[2],bmax[2],ierflg);
-	gMinuit->mnparm( 3, "d", vstart[3],step[3],bmin[3],bmax[3],ierflg);
-	gMinuit->mnparm( 4, "e", vstart[4],step[4],bmin[4],bmax[4],ierflg);
-	gMinuit->mnparm( 5, "f", vstart[5],step[5],bmin[5],bmax[5],ierflg);
-	gMinuit->mnparm( 6, "g", vstart[6],step[6],bmin[6],bmax[6],ierflg);
-	gMinuit->mnparm( 7, "h", vstart[7],step[7],bmin[7],bmax[7],ierflg);
-	gMinuit->mnparm( 8, "l", vstart[8],step[8],bmin[8],bmax[8],ierflg);
-	gMinuit->mnparm( 9, "m", vstart[9],step[9],bmin[9],bmax[9],ierflg);
-
-
-	// Set the output
-	// set the print level
-	// -1 no output
-	// 1 standdard output
-	gMinuit->SetPrintLevel(1);
-
-	//minimization strategy
-	// 1 standard
-	// 2 try to improve minimum (slower)
-	arglist[0]=2;
-	gMinuit->mnexcm("SET STR",arglist, 1, ierflg);
-
-	// Call the minimizer
-	arglist[0]=5e6;
-
-	gMinuit->mnexcm("MIGRAD",arglist,1,ierflg);
-//	gMinuit->mnsimp();
-
-	// read out the parameters.
-	double_t MiniPars[10];
-	double_t MiniParsErr[10];
-	for(int i =0 ; i < 10 ; i ++){
-		gMinuit->GetParameter(i,MiniPars[i],MiniParsErr[i]);
-	}
-
-	TCanvas *a=new TCanvas("a","a",1000,1000);
-	MinimizerCheck(MiniPars,a);
-	/*
-	// load the parameter to draw
-	if(true){
-		TCanvas *a = new TCanvas("Minimize Check", "Minimize Check", 1000, 1000);
-		a->Divide(2,1);
-		a->Draw();
-
-		a->cd(1);
-		// plot the initial result before the correction
-		TH1F *DeltaX=new TH1F("DeltaX","DeltaX",100,-0.01,0.01);
-		DeltaX->GetYaxis()->SetRangeUser(0,500);
-		TH1F *DeltaXCorr=new TH1F("DeltaXCorr","DeltaXCorr",100,-0.01,0.01);
-		DeltaXCorr->SetLineColor(3);
-
-		for(auto Event : DetHitBuff){
-			auto vdc=Event[0];
-			auto gem=Event[1];
-
-			double_t residue=vdc.GetX() + gem.GetZ() * vdc.GetTheta()-gem.GetX();
-			if(residue<-0.004 || residue>0.01) continue;
-
-			// correct the position for the X and Y
-			double_t Xcorr=gem.GetX() * MiniPars[0] + gem.GetZ() * MiniPars[1] + MiniPars[2];
-			double_t Zcorr=gem.GetX() * MiniPars[3] + gem.GetZ() * MiniPars[4] + MiniPars[5];
-
-			double_t delta=vdc.GetX()+Zcorr*vdc.GetTheta()-Xcorr;
-			DeltaXCorr->Fill(delta);
-			DeltaX->Fill(vdc.GetX() + gem.GetZ() * vdc.GetTheta()-gem.GetX());
-		}
-	DeltaX->Draw();
-	DeltaXCorr->Draw("same");
-	a->Modified();
-	a->Update();
-	}
-*/
-
-}
-
-/*
 void fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag){
 	// correction matrix     [0] [1] [2]
 	//						 [3] [4] [5]
@@ -596,7 +174,7 @@ void fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag){
 		chisq=delta*delta;
 	}
 	f=chisq;
-}*/
+}
 
 
 int ProjectVDC(int id=0){
@@ -660,7 +238,7 @@ int ProjectVDC(int id=0){
 	return 0;
 }
 
-/*
+
 void TMinimer(){
 	LoadDetectorHit();      // load the raw hit from the txt file
 	gStyle->SetOptFile(1111111);
@@ -725,6 +303,17 @@ void TMinimer(){
 		std::cout<<"Par "<< i <<"   "<< MiniPars[i]<<"   "<<MiniParsErr[i]<<std::endl;
 		vstart[i]= MiniPars[i];
 	}
+/*	gMinuit->mnparm( 0, "a", vstart[0],step[0],bmin[0],bmax[0],ierflg);
+	gMinuit->mnparm( 1, "b", vstart[1],step[1],bmin[1],bmax[1],ierflg);
+	gMinuit->mnparm( 2, "c", vstart[2],step[2],bmin[2],bmax[2],ierflg);
+	gMinuit->mnparm( 3, "d", vstart[3],step[3],bmin[3],bmax[3],ierflg);
+	gMinuit->mnparm( 4, "e", vstart[4],step[4],bmin[4],bmax[4],ierflg);
+	gMinuit->mnparm( 5, "f", vstart[5],step[5],bmin[5],bmax[5],ierflg);
+//	gMinuit->mnsimp();
+	gMinuit->mnexcm("MIGRAD",arglist,1,ierflg);
+	for(int i =0 ; i < 6 ; i ++){
+			gMinuit->GetParameter(i,MiniPars[i],MiniParsErr[i]);
+		}*/
 
 	// load the parameter to draw
 	if(true){
@@ -764,7 +353,7 @@ void TMinimer(){
 
 }
 
-// the shift parameter should close to 0
+/*// the shift parameter should close to 0
 void fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag){
 
 	Double_t chisq=0.0;
