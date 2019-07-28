@@ -237,6 +237,8 @@ double_t GetResidual(std::vector<HitStruct> DetHit,std::string dimension="xz"){
 
 		double_t deltaD=residualF/(std::sqrt(a*a+b*b));
 		residue+=deltaD*deltaD;
+//		residue+=std::abs(deltaD);
+
 //		std::cout<<"Distance "<<std::abs(deltaD)<<std::endl;
 	}
 return residue;
@@ -298,8 +300,11 @@ void fcn_residual(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t 
 	//   GEM 6  X par[8]  Y par[9]
 	Double_t chisq=0.0;
 
+	TH2F *FitFunc;
 	// loop on the event and apply the corretion
+	int counter=0;
 	for(auto Event : DetHitBuff){
+
 		std::vector<HitStruct> gemEvent(Event.begin()+1, Event.end());
 		assert(gemEvent.size()==6);
 		// appli the correction matrix on the GEM detectors
@@ -316,10 +321,29 @@ void fcn_residual(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t 
 			gemCorrected.push_back(a);
 		}
 
-		chisq+=GetResidual(gemCorrected);
+		// test the funct
+//		std::cout<<gemCorrected.size()<<std::endl;
+/*		for (auto Hit : gemCorrected){
+			FitFunc->Fill(Hit.GetZ(),Hit.GetX());
+		}
+		FitFunc=new TH2F("zx","zx",1000,-0,3.0,2000,-0.4,0.4);
+		FitFunc->Fit("pol1","Q");
+		chisq+=FitFunc->GetFunction("pol1")->GetChisquare();
 
+		std::cout<<counter++<<std::endl;
+
+		FitFunc->Delete();*/
+		chisq+=GetResidual(gemCorrected);
 	}
+
+
 	f=chisq;
+
+}
+
+void fcn_residual_tranlationRotation(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag){
+	// take the translation and rotation into consideration
+
 }
 
 double_t GetDeltD(std::vector<HitStruct> DetHit,std::string dimension="xz",int detectorID=0){
@@ -341,8 +365,8 @@ double_t GetDeltD(std::vector<HitStruct> DetHit,std::string dimension="xz",int d
 		double_t b=-1.0;
 
 		double_t deltaD=residualF/(std::sqrt(a*a+b*b));
-		residue+=deltaD;
-		if((detectorID!=0) && (Hit.GetDetectorID()==detectorID)) return deltaD;
+		residue+=(deltaD);
+		if((detectorID!=0) && (Hit.GetDetectorID()==detectorID)) return (deltaD);
 //		std::cout<<"Distance "<<std::abs(deltaD)<<std::endl;
 	}
 return residue;
@@ -353,7 +377,7 @@ double_t MinimizerCheck(double_t *par, TCanvas *a){
 	a->cd(1);
 
 	for(int i =0 ; i < 10 ; i ++) std::cout<<par[i]<<std::endl;
-	TH1F *residualBefore=new TH1F("ResdualBefore","ResdualBefore",100,-0.001,0.001);
+	TH1F *residualBefore=new TH1F("ResdualBefore","ResdualBefore",100,-0.01,0.01);
 	residualBefore->GetYaxis()->SetRangeUser(0,3000);
 	TH1F *residualAfter=new TH1F("ResdualAfter","ResdualAfter",100,residualBefore->GetXaxis()->GetXmin(),residualBefore->GetXaxis()->GetXmax());
 	residualAfter->SetLineColor(3);
@@ -511,7 +535,68 @@ void TMinimer(){
 	double_t MiniParsErr[10];
 	for(int i =0 ; i < 10 ; i ++){
 		gMinuit->GetParameter(i,MiniPars[i],MiniParsErr[i]);
+		vstart[i]=MiniPars[i];
 	}
+
+	// changed the coordination and refit
+//	Hit.GetDetectorID(),Hit.GetX()-par[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-par[Hit.GetDetectorID()-1]
+	std::vector<std::vector<HitStruct>> newDetHitBuff;
+	for (auto Event : DetHitBuff){
+		std::vector<HitStruct> EventBuff;
+		EventBuff.push_back(Event[0]);
+		EventBuff.push_back(Event[1]);
+
+		std::vector<HitStruct> GEMCorr(Event.begin()+2,Event.end());
+
+		for (auto Hit : GEMCorr){
+
+			if(Hit.GetDetectorID()>=2){
+				HitStruct a(Hit.GetDetectorID(),Hit.GetX()-MiniPars[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-MiniPars[Hit.GetDetectorID()-1]);
+				EventBuff.push_back(a);
+			}
+		}
+		assert(EventBuff.size()==7);
+		newDetHitBuff.push_back(EventBuff);
+	}
+	DetHitBuff.clear();
+	DetHitBuff.insert(DetHitBuff.begin(),newDetHitBuff.begin(),newDetHitBuff.end());
+
+	gMinuit->mnparm( 0, "a", vstart[0],step[0],bmin[0],bmax[0],ierflg);
+	gMinuit->mnparm( 1, "b", vstart[1],step[1],bmin[1],bmax[1],ierflg);
+	gMinuit->mnparm( 2, "c", vstart[2],step[2],bmin[2],bmax[2],ierflg);
+	gMinuit->mnparm( 3, "d", vstart[3],step[3],bmin[3],bmax[3],ierflg);
+	gMinuit->mnparm( 4, "e", vstart[4],step[4],bmin[4],bmax[4],ierflg);
+	gMinuit->mnparm( 5, "f", vstart[5],step[5],bmin[5],bmax[5],ierflg);
+	gMinuit->mnparm( 6, "g", vstart[6],step[6],bmin[6],bmax[6],ierflg);
+	gMinuit->mnparm( 7, "h", vstart[7],step[7],bmin[7],bmax[7],ierflg);
+	gMinuit->mnparm( 8, "l", vstart[8],step[8],bmin[8],bmax[8],ierflg);
+	gMinuit->mnparm( 9, "m", vstart[9],step[9],bmin[9],bmax[9],ierflg);
+	// Set the output
+	// set the print level
+	// -1 no output
+	// 1 standdard output
+	gMinuit->SetPrintLevel(1);
+
+	//minimization strategy
+	// 1 standard
+	// 2 try to improve minimum (slower)
+	arglist[0]=2;
+	gMinuit->mnexcm("SET STR",arglist, 1, ierflg);
+
+	// Call the minimizer
+	arglist[0]=5e8;
+
+	gMinuit->mnexcm("MIGRAD",arglist,1,ierflg);
+//	gMinuit->mnsimp();
+
+	// read out the parameters.
+//	double_t MiniPars[10];
+//	double_t MiniParsErr[10];
+	for(int i =0 ; i < 10 ; i ++){
+		gMinuit->GetParameter(i,MiniPars[i],MiniParsErr[i]);
+		vstart[i]=MiniPars[i];
+	}
+
 
 	TCanvas *a=new TCanvas("a","a",1000,1000);
 	MinimizerCheck(MiniPars,a);
