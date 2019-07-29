@@ -244,7 +244,24 @@ double_t GetResidual(std::vector<HitStruct> DetHit,std::string dimension="xz"){
 return residue;
 }
 
+double GetChisq(std::vector<HitStruct> DetHit,std::string dimension="xz"){
+	assert(DetHit.size()==6);
 
+	double_t residualF=0.0;
+	double_t residualParSq=0.0;
+
+	double_t residue=0.0;
+	double_t Chisq=0.0;
+	for(auto Hit : DetHit){
+		double_t x[1]={Hit.GetZ()};
+		double_t slop=0.0;
+		double f=linearInvertFit(DetHit,x,slop);
+		Chisq+=(f-Hit.GetX())*(f-Hit.GetX())/Hit.GetX();
+//		residualF=linearInvertFit(DetHit,x,slop)-Hit.GetX();
+
+	}
+return Chisq;
+}
 
 
 double_t FitTest(){
@@ -334,6 +351,7 @@ void fcn_residual(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t 
 
 		FitFunc->Delete();*/
 		chisq+=GetResidual(gemCorrected);
+//		chisq+=GetChisq(gemCorrected);
 	}
 
 
@@ -374,10 +392,10 @@ return residue;
 
 double_t MinimizerCheck(double_t *par, TCanvas *a){
 	a->Divide(2,1);
-	a->cd(1);
-
+	a->cd(1)->Divide(1,2);
+	a->cd(1)->cd(1);
 	for(int i =0 ; i < 10 ; i ++) std::cout<<par[i]<<std::endl;
-	TH1F *residualBefore=new TH1F("ResdualBefore","ResdualBefore",100,-0.01,0.01);
+	TH1F *residualBefore=new TH1F("ResdualBefore","ResdualBefore",100,-0.001,0.001);
 	residualBefore->GetYaxis()->SetRangeUser(0,3000);
 	TH1F *residualAfter=new TH1F("ResdualAfter","ResdualAfter",100,residualBefore->GetXaxis()->GetXmin(),residualBefore->GetXaxis()->GetXmax());
 	residualAfter->SetLineColor(3);
@@ -397,6 +415,48 @@ double_t MinimizerCheck(double_t *par, TCanvas *a){
 	}
 	residualBefore->Draw();
 	residualAfter->Draw("same");
+
+	// check Theta compare with VDC
+	a->cd(1)->cd(2)->Divide(2,1);
+	a->cd(1)->cd(2)->cd(1);
+	TH2F *thetaCheckAfter=new TH2F("thetaCheckAfter","thetaCheckAfter",1000,-0.03,0.03,1000,-0.03,0.03);
+	TH2F *thetaCheckBefore=new TH2F("thetaCheckBefore","thetaCheckBefore",1000,-0.03,0.03,1000,-0.03,0.03);
+	thetaCheckAfter->SetMarkerColor(3);
+	TH1F *thetaVDCHisto=new TH1F("vdc","vdc",100,-0.03,0.03);
+	thetaVDCHisto->SetLineColor(1);
+	TH1F *thetaGEMBeforeHisto=new TH1F("GEMBefore","GEMBefore",100,-0.03,0.03);
+	thetaGEMBeforeHisto->SetLineColor(2);
+	TH1F *thetaGEMAfterHisto=new TH1F("thetaGEMAfterHisto","thetaGEMAfterHisto",100,-0.03,0.03);
+	thetaGEMAfterHisto->SetLineColor(3);
+	for(auto Event : DetHitBuff){
+		std::vector<HitStruct> gemEvent(Event.begin()+1, Event.end());
+		std::vector<HitStruct> gemcorrEvent(Event.begin()+2, Event.end());
+
+		std::vector<HitStruct> gemCorrected;
+		gemCorrected.push_back(gemEvent[0]);
+	    for(auto Hit : gemcorrEvent){
+	    	HitStruct a(Hit.GetDetectorID(),Hit.GetX()-par[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-par[Hit.GetDetectorID()-1]);
+	    	gemCorrected.push_back(a);
+		}
+	    double x[1]={0.0};
+	    double slop=0.0;
+	    linearInvertFit(gemCorrected,x,slop);
+	    thetaCheckAfter->Fill(Event[0].GetTheta(),slop);
+	    thetaGEMAfterHisto->Fill(slop);
+
+//	    thetaCheckBefore
+	    linearInvertFit(gemcorrEvent,x,slop);
+	    thetaCheckBefore->Fill(Event[0].GetTheta(),slop);
+	    thetaVDCHisto->Fill(Event[0].GetTheta());
+	    thetaGEMBeforeHisto->Fill(slop);
+
+	}
+	thetaCheckAfter->Draw();
+	thetaCheckBefore->Draw("same");
+	a->cd(1)->cd(2)->cd(2);
+	thetaVDCHisto->Draw();
+	thetaGEMBeforeHisto->Draw("same");
+	thetaGEMAfterHisto->Draw("same");
 
 	//distance check
 	a->cd(2)->Divide(1,2);
@@ -457,7 +517,8 @@ double_t MinimizerCheck(double_t *par, TCanvas *a){
 
 	a->Update();
 
-	// calculate the prediced position vs the real pos
+
+
 
 	return 0.0;
 }
@@ -538,6 +599,7 @@ void TMinimer(){
 		vstart[i]=MiniPars[i];
 	}
 
+/*
 	// changed the coordination and refit
 //	Hit.GetDetectorID(),Hit.GetX()-par[Hit.GetDetectorID()-2],Hit.GetY(),Hit.GetZ()-par[Hit.GetDetectorID()-1]
 	std::vector<std::vector<HitStruct>> newDetHitBuff;
@@ -596,7 +658,7 @@ void TMinimer(){
 		gMinuit->GetParameter(i,MiniPars[i],MiniParsErr[i]);
 		vstart[i]=MiniPars[i];
 	}
-
+*/
 
 	TCanvas *a=new TCanvas("a","a",1000,1000);
 	MinimizerCheck(MiniPars,a);
