@@ -909,7 +909,10 @@ void TMinimizer2DRT(){
 
 
 // a more general code used for fit
-double_t LineFit2D(std::vector<HitStruct> DetHit, double_t *x,double_t &fitpar, std::string dimension="xz"){
+//
+//
+// DetCut: exclude the detector with ID number
+double_t LineFit2D(std::vector<HitStruct> DetHit, double_t *x,double_t &fitpar, std::string dimension="xz",int8_t DetCut=-1){
 
 	assert(DetHit.size()==6);
 
@@ -919,12 +922,14 @@ double_t LineFit2D(std::vector<HitStruct> DetHit, double_t *x,double_t &fitpar, 
 
 	if(subGEM.size()!=6){exit(-1);};
 
-	double_t HitNum=(double_t)subGEM.size();
+	double_t HitNum=0.0;
 
 	for(auto Hit : subGEM){
+		if(Hit.GetDetectorID()==DetCut) continue;
 		Xsum+=Hit.GetX();
 		Ysum+=Hit.GetY();
 		Zsum+=Hit.GetZ();
+		HitNum+=1.0;
 	}
 
 	Xaverage=Xsum/HitNum;
@@ -942,6 +947,7 @@ double_t LineFit2D(std::vector<HitStruct> DetHit, double_t *x,double_t &fitpar, 
 	double_t SlopZSum=0.0;
 
 	for(auto Hit : subGEM){
+		if(Hit.GetDetectorID()==DetCut) continue;
 		fitXYSum+=(Hit.GetX()-Xaverage)*(Hit.GetY()-Yaverage);
 		fitXZSum+=(Hit.GetX()-Xaverage)*(Hit.GetZ()-Zaverage);
 		fitYZSum+=(Hit.GetY()-Yaverage)*(Hit.GetZ()-Zaverage);
@@ -1494,11 +1500,13 @@ double_t GetResidual3D(std::vector<HitStruct> DetHit,std::string dimension="xz",
 	double_t residualF=0.0;
 	double_t residue=0.0;
 
+	// when culclate the residue. need to excluse the target detector when doing the fit
+
 	if(dimension == "zx"){
 		for (auto Hit : DetHit){
 			double_t fitM=0.0;
 			double_t fitX[1]={Hit.GetZ()};
-			residualF=LineFit2D(DetHit,fitX,fitM,"zx")-Hit.GetX();
+			residualF=LineFit2D(DetHit,fitX,fitM,"zx",Hit.GetDetectorID())-Hit.GetX();
 			double_t deltaD=residualF/(std::sqrt(fitM*fitM+1));
 			residue+=deltaD*deltaD;
 			if((detectorID!=0) && (Hit.GetDetectorID()==detectorID)) return (deltaD*deltaD);
@@ -1508,7 +1516,7 @@ double_t GetResidual3D(std::vector<HitStruct> DetHit,std::string dimension="xz",
 		for (auto Hit : DetHit) {
 			double_t fitM = 0.0;
 			double_t fitX[1] = { Hit.GetZ() };
-			residualF = LineFit2D(DetHit, fitX, fitM, "zy") - Hit.GetY();
+			residualF = LineFit2D(DetHit, fitX, fitM, "zy",Hit.GetDetectorID()) - Hit.GetY();
 			double_t deltaD = residualF / (std::sqrt(fitM * fitM + 1));
 			residue += deltaD * deltaD;
 			if((detectorID!=0) && (Hit.GetDetectorID()==detectorID)) return (deltaD*deltaD);
@@ -1521,12 +1529,12 @@ double_t GetResidual3D(std::vector<HitStruct> DetHit,std::string dimension="xz",
 		for (auto Hit : DetHit){
 			double_t fitM=0.0;
 			double_t fitX[1]={Hit.GetZ()};
-			residualF=LineFit2D(DetHit,fitX,fitM,"zx")-Hit.GetX();
+			residualF=LineFit2D(DetHit,fitX,fitM,"zx",Hit.GetDetectorID())-Hit.GetX();
 			double_t deltaD=residualF/(std::sqrt(fitM*fitM+1));
 			residue+=deltaD*deltaD;
 			deltazx=deltaD*deltaD;
 
-			residualF = LineFit2D(DetHit, fitX, fitM, "zy") - Hit.GetY();
+			residualF = LineFit2D(DetHit, fitX, fitM, "zy",Hit.GetDetectorID()) - Hit.GetY();
 			deltaD = residualF / (std::sqrt(fitM * fitM + 1));
 			residue += deltaD * deltaD;
 			deltazy=deltaD * deltaD;
@@ -1537,14 +1545,14 @@ double_t GetResidual3D(std::vector<HitStruct> DetHit,std::string dimension="xz",
 		for (auto Hit : DetHit){
 			double_t fitM=0.0;
 			double_t fitX[1]={Hit.GetZ()};
-			residualF=LineFit2D(DetHit,fitX,fitM,"zx")-Hit.GetX();
+			residualF=LineFit2D(DetHit,fitX,fitM,"zx",Hit.GetDetectorID())-Hit.GetX();
 			double_t deltaD=residualF/(std::sqrt(fitM*fitM+1));
 			residue+=deltaD;
 		}
 		for (auto Hit : DetHit) {
 			double_t fitM = 0.0;
 			double_t fitX[1] = { Hit.GetZ() };
-			residualF = LineFit2D(DetHit, fitX, fitM, "zy") - Hit.GetY();
+			residualF = LineFit2D(DetHit, fitX, fitM, "zy",Hit.GetDetectorID()) - Hit.GetY();
 			double_t deltaD = residualF / (std::sqrt(fitM * fitM + 1));
 			residue += deltaD ;
 		}
@@ -1570,33 +1578,7 @@ void fcn_3DT_residual(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, In
 		std::vector<HitStruct> gemEvent(Event.begin()+1,Event.end()); // all the GEM detectors
 		std::vector<HitStruct> gemCorrected = HitPosCorrection3DT(gemEvent, par);
 
-		//
-//		std::vector<HitStruct> gemcorrEvent(gemEvent.begin()+1,gemEvent.end());
-//		if((gemcorrEvent.size()!=5 )||gemEvent[0].GetDetectorID()!=1){
-//			std::cout<<__FUNCTION__<<"("<<__LINE__<<") Paramater need to be 6"<<std::endl;
-//			exit(-1);
-//		}
-//
-//		gemCorrected.push_back(gemEvent[0]);
-//		// start correct the matrix
-//		// for 3D RT correction need 30 parameters
-//		for(auto Hit : gemcorrEvent){
-//			if(Hit.GetDetectorID()<2){
-//				std::cout<<__FUNCTION__<<"("<<__LINE__<<") detectorID does not match"<<std::endl;
-//				exit(-1);
-//			}
-//
-//			int16_t parBaseID=(Hit.GetDetectorID()-2)*3; //three parameters on each plane
-//
-//			double_t Xcorr=Hit.GetX() + par[parBaseID + 0];
-//			double_t Ycorr=Hit.GetY() + par[parBaseID + 1];
-//			double_t Zcorr=Hit.GetZ() + par[parBaseID + 2];
-//			HitStruct a(Hit.GetDetectorID(),Xcorr,Ycorr,Zcorr);
-//			gemCorrected.push_back(a);
-//		}
-//
-//
-		// fit this event
+/*		// fit this event
 		// get the X parameter
 		double_t fitM=0.0;
 		double_t fitN=0.0;
@@ -1609,7 +1591,7 @@ void fcn_3DT_residual(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, In
 		// generate the residue
 		// (m,n, 1) is the vector along the fit line
 		// (Hit.x - x0, hit.y - y0, hit.z -z0) project to the line vector
-/*		for(auto Hit : gemCorrected){ // loop on the event, and get the residual
+		for(auto Hit : gemCorrected){ // loop on the event, and get the residual
 			double delta=((Hit.GetX()-gemEvent[0].GetX())*fitM + (Hit.GetY()-gemEvent[0].GetY()) * fitN + (Hit.GetZ()-gemEvent[0].GetZ()) * 1.0 )/std::sqrt( fitM * fitM + fitN * fitN +1.0);
 			chisq+=delta*delta;
 
@@ -1722,34 +1704,6 @@ double_t MinimizerCheck3DT(double_t *par, TCanvas *a){
 	TH1F *deltDAfterAlignSum=new TH1F("DeltaDAfter","DeltadAfter",100,-0.1,100);
 	deltDAfterAlignSum->SetLineColor(3);
 
-	/*	TH2F *DetHitHistXZ;
-	TH2F *DetCorrHitHistXZ;
-	double_t counter=0;
-	for(auto Event : DetHitBuff){
-
-		std::vector<HitStruct> gemEvent(Event.begin()+1, Event.end());
-		std::vector<HitStruct> gemCorrected=HitPosCorrection3DT(gemEvent,par);
-
-		DetHitHistXZ=new TH2F("XZ","XZ",1000, -0, 3.0, 2000, -0.4, 0.4);
-		DetCorrHitHistXZ=new TH2F("XZcorr","XZcorr",1000, -0, 3.0, 2000, -0.4, 0.4);
-
-	for (auto Hit : gemEvent){
-			DetHitHistXZ->Fill(Hit.GetZ(),Hit.GetX());
-		}
-		for (auto Hit : gemEvent) {
-			DetCorrHitHistXZ->Fill(Hit.GetZ(), Hit.GetX());
-		}
-		DetHitHistXZ->Fit("pol1","Q");
-		DetCorrHitHistXZ->Fit("pol1","Q");
-
-	    deltDBeforAlignSum->Fill(DetHitHistXZ->GetFunction("pol1")->GetChisquare());
-	    deltDAfterAlignSum->Fill(DetCorrHitHistXZ->GetFunction("pol1")->GetChisquare());
-	    std::cout<<counter++<<" Before alignment : "<< (DetHitHistXZ->GetFunction("pol1")->GetChisquare())
-	    		<<" ==>"<<(DetCorrHitHistXZ->GetFunction("pol1")->GetChisquare()) <<std::endl;
-	    DetHitHistXZ->Delete();
-	    DetCorrHitHistXZ->Delete();
-
-	}*/
 	deltDBeforAlignSum->Draw();
 	deltDAfterAlignSum->Draw("same");
 
