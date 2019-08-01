@@ -1,0 +1,8 @@
+#temporary file 
+*~
+
+#
+*.o
+*.so
+*.d
+
