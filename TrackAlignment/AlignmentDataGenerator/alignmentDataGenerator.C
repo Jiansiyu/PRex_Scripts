@@ -588,6 +588,7 @@ vdcplane_xz->Delete();
 			TF1 *lFitFunctionXZ=trackFitXZ_invert->GetFunction("pol1");
 			TF1 *lFitFunctionZX=trackFitXZ->GetFunction("pol1");
 
+
 //			trackFitXZ_invert->Delete();
 
 			Double_t a=lFitFunctionXZ->GetChisquare() > lFitFunctionZX->GetChisquare() ? lFitFunctionZX->GetChisquare():lFitFunctionXZ->GetChisquare();
