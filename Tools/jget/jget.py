@@ -64,8 +64,17 @@ class mssget(object):
                     else:
                         runListArray.append([item for item in line.strip().split('#')[0].strip().split(',')])
         for line in runListArray:
-            if len(line) == 2:
-                pass
+            if len(line) == 2 and len(line[0]) > 2:
+                for item in self.ReadList(avg=ReadList(line[0],startRunNumber=line[1]):
+                    FileListArray.append(item)
+            elif len(line) == 3 and len(line[0]) > 2:
+                for item in self.ReadList(avg=ReadList(line[0],startRunNumber=line[1],endRunNumber=line[2]):
+                    FileListArray.append(item)
+            elif len(line) ==1 and len(line[0]) > 2:
+                for item in self.ReadList(avg=ReadList(line[0]):
+                    FileListArray.append(item)
+
+        return FileListArray
     
     def ReadList(self, avg="",startRunNumber=-1, endRunNumber=-1):
         '''
@@ -74,7 +83,7 @@ class mssget(object):
         '''
         fileList=[]
         
-        if os.path.isfile(avg) and ".txt" in arg:
+        if os.path.isfile(avg) and ".txt" in avg:
             # this is a readlist txt file contains the files that want to readout
             pass
         
@@ -84,14 +93,13 @@ class mssget(object):
             if startRunNumber != -1 :
                 if endRunNumber > startRunNumber:
                     for splitID in range(startRunNumber,endRunNumber+1):
-                        fileList.append(self.ReadListWNumber(runNumber=int(avg),splitID)
+                        fileList.append(self.ReadListWNumber(runNumber=int(avg),FileSplitID=splitID)) 
                 else:
-                    fileList.append(self.ReadListWNumber(runNumber=int(avg),startRunNumber)
+                    fileList.append(self.ReadListWNumber(runNumber=int(avg),FileSplitID=startRunNumber))
             else:
                 filename=self.ReadListWNumber(runNumber=int(avg))
                 for item in filename:
                     fileList.append(item)
-        
         else:
             for item in self.ReadListWname(filename=avg):
                 fileList.append(item)
@@ -114,7 +122,7 @@ class mssget(object):
                 filename="{0}.{1}".format(filename,FileSplitID)
         return self.ReadListWname(filename=filename)
 
-    def ReadListWname(self, filename="aa.dat.0"):
+    def ReadListWname(self, filename="aa.dat.0", FileSplitID=-1):
         '''
         Get all file list
         if the file end with run number, it will only read out this one 
@@ -129,8 +137,10 @@ class mssget(object):
         
         if filename[-1].isdigit():
             return glob.glob("{}".format(filenamewithoutNumber))
-        else:
+        elif FileSplitID ==-1 :
             return glob.glob("{}.*".format(filenamewithoutNumber))
+        else:
+            return glob.glob("{0}.{}".format(filenamewithoutNumber,FileSplitID))
     
     def _isFileWpath(self, filename=""):
         '''
