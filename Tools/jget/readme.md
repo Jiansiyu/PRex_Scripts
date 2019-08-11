@@ -1,42 +1,60 @@
-# file name            save path [save in current path if not specified]
-prexRHRS_20532.dat.0
-prexRHRS_20532.dat.1
-prexRHRS_20532.dat.2 
+## jget scripts
+
+ jget scripts used for automaticly get the data file from the mss. It can take multi-input format. It can take run number as input, it will automaticly generate RHRS or LHRS file name. It also can take filename, filename with full path or txt file which contains runlist. It also can take multi different type of input. 
+
+Input Type, all those type can be conbined together
 
 
-# Automaticly get the data file from the mss
+* Run number
+* file name 
+* file name with fullpath in the mss
+* file name with run split number 
+* file name without run split number
 
+Other feature:
+
+* it will check whether the file is in the mss or not, if not it will skip that run
+* when the run split number is not give, it will check all the files in the mss and try to download all the files in the mss
+* if given full name with split number, it will only download this file from mss
 ### input format
+
 #### 1. run number 
 
+example command:
+
 ---
-    ./jget 20110
+    ./jget 21110
     ./jget 2033
 ---
 
 #### 2. run name 
 
+example command
+
 ---
     ./jget prexRHRS_20532.dat      will read all the files that match prexRHRS_20532.dat.*
-    ./jget prexRHRS_20532.dat.0
+    ./jget prexRHRS_20532.dat.0    will download one file with name "prexRHRS_20532.dat.0"
 ---
 
 #### 3. run list
- Read file list name must end with .txt, otherwise it will not take it
+Read file list name must end with .txt, otherwise it will not take it
+
+example command:
 ---
     ./jget runlist.txt      
 ---
 
-### format of the run list ffile 
+##### format of the run list ffile 
 
         run nmae (or run number) start run ID (optional) end run ID(optional)
-
-       * prexRHRS_1111.dat,     0 , 1
+---
+       * prexRHRS_1111.dat,     0 , 10    # will dowload all the run split from 0 to 10
         
-       * prexRHRS_1111.dat
-         
-       * 1111，     0 , 1
+       * prexRHRS_1111.dat                # will dowload all the run split
+       * prexRHRS_1111.dat.0              #  will download one file with name "prexRHRS_1111.dat.0"
+       * 1111，     0 , 1                  # will dowload all the run split from 0 to 10 for run 1111
     
-       * 1111
-       * 1111， 1 （will only read the one with file run ID and run ID） 
-
+       * 1111                             # will dowload all the run split for run 1111
+       * 1111， 1                          #will only read the one with file run ID and run ID 
+       
+---
