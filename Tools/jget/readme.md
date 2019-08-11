@@ -16,9 +16,29 @@ Other feature:
 * it will check whether the file is in the mss or not, if not it will skip that run
 * when the run split number is not give, it will check all the files in the mss and try to download all the files in the mss
 * if given full name with split number, it will only download this file from mss
+
+
 ### input format
 
-#### 1. run number 
+---
+
+	python3 jget.py [input(can be anything from following)] [savePath(optional)]
+---
+
+
+#### How to set the file path that want to save the files from MSS
+
+It can input from command line when run the scripts. If not specified, the file(s) will be save to the current path(./).
+
+---
+
+	python3 jget.py [input(can be anything from following)] [savePath(optional)]
+
+---
+
+#### How to set the run number want to get from MSS
+
+##### 1. run number 
 
 example command:
 
@@ -27,7 +47,7 @@ example command:
     ./jget 2033
 ---
 
-#### 2. run name 
+##### 2. run name 
 
 example command
 
@@ -36,7 +56,7 @@ example command
     ./jget prexRHRS_20532.dat.0    will download one file with name "prexRHRS_20532.dat.0"
 ---
 
-#### 3. run list
+##### 3. run list
 Read file list name must end with .txt, otherwise it will not take it
 
 example command:
@@ -44,7 +64,7 @@ example command:
     ./jget runlist.txt      
 ---
 
-##### format of the run list ffile 
+###### format of the run list ffile 
 
         run nmae (or run number) start run ID (optional) end run ID(optional)
 ---
