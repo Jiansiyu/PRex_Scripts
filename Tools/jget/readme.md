@@ -57,11 +57,10 @@ example command
 ---
 
 ##### 3. run list
-Read file list name must end with .txt, otherwise it will not take it
+example command
 
-example command:
 ---
-    ./jget runlist.txt      
+    ./jget runlist.txt      #Read file list name must end with .txt, otherwise it will not take it
 ---
 
 ###### format of the run list ffile 
