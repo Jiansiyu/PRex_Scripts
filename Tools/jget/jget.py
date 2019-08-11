@@ -28,12 +28,34 @@
 
 import os
 import glob
+import sys
 class mssget(object):
     '''
     '''
     def __init__(self):
         self.mssPath="/mss/halla/happexsp/raw/" 
+        self.SavePath="./"
+        self.MssFileQauryList=[]
+        self.MssSuccessList=[]
+        self.MssFailList=[]
+        self.CurrentFile=""
         pass
+
+    def GetFiles(self):
+        #start get the file and save the file into the folder 
+        commandList=[]
+        for file in self.MssFileQauryList:
+            if len(file) > 3:
+                jgetCMD="jget {0} {1} &".format(file,self.SavePath)
+                commandList.append(jgetCMD)
+        commandList=list(set(commandList))
+        commandList.sort()
+        for item in commandList:
+            print("Get Item: {}".format(item))
+            os.system(item)
+
+    def setSavePath(self, SavePath="."):
+        self.SavePath=SavePath
     
     def ReadListFile(self,RunListFileName="runList.txt"):
         '''
@@ -63,17 +85,20 @@ class mssget(object):
                         
                     else:
                         runListArray.append([item for item in line.strip().split('#')[0].strip().split(',')])
+
         for line in runListArray:
             if len(line) == 2 and len(line[0]) > 2:
-                for item in self.ReadList(avg=ReadList(line[0],startRunNumber=line[1]):
-                    FileListArray.append(item)
+                for item in self.ReadList(avg=line[0],startRunNumber=int(line[1])):
+                    if len(item) !=0:
+                        FileListArray.append(item[0])
             elif len(line) == 3 and len(line[0]) > 2:
-                for item in self.ReadList(avg=ReadList(line[0],startRunNumber=line[1],endRunNumber=line[2]):
-                    FileListArray.append(item)
+                for item in self.ReadList(avg=line[0],startRunNumber=int(line[1]),endRunNumber=int(line[2])):
+                    if len(item) !=0:
+                        FileListArray.append(item[0])
             elif len(line) ==1 and len(line[0]) > 2:
-                for item in self.ReadList(avg=ReadList(line[0]):
-                    FileListArray.append(item)
-
+                for item in self.ReadList(avg=line[0]):
+                    if len(item) !=0:    
+                        FileListArray.append(item[0])
         return FileListArray
     
     def ReadList(self, avg="",startRunNumber=-1, endRunNumber=-1):
@@ -84,25 +109,31 @@ class mssget(object):
         fileList=[]
         
         if os.path.isfile(avg) and ".txt" in avg:
-            # this is a readlist txt file contains the files that want to readout
-            pass
-        
+            for item in self.ReadListFile(RunListFileName=avg):
+                if len(item) != 0:
+                    fileList.append(item)
         elif avg.isnumeric():
             # this is the number that want to convert into an file name
             # and get all the files in the mss
             if startRunNumber != -1 :
                 if endRunNumber > startRunNumber:
                     for splitID in range(startRunNumber,endRunNumber+1):
-                        fileList.append(self.ReadListWNumber(runNumber=int(avg),FileSplitID=splitID)) 
+                        for item in self.ReadListWNumber(runNumber=int(avg),FileSplitID=splitID):
+                            fileList.append(item)
                 else:
-                    fileList.append(self.ReadListWNumber(runNumber=int(avg),FileSplitID=startRunNumber))
+                    for item in self.ReadListWNumber(runNumber=int(avg),FileSplitID=startRunNumber):
+                        fileList.append(item)
             else:
                 filename=self.ReadListWNumber(runNumber=int(avg))
                 for item in filename:
                     fileList.append(item)
+        
         else:
             for item in self.ReadListWname(filename=avg):
                 fileList.append(item)
+        
+        for item in fileList:
+            self.MssFileQauryList.append(item)
         return fileList
 
 
@@ -154,18 +185,14 @@ class mssget(object):
         '''
         return os.path.isfile(filename)
     
-    def GetFiles(self, target="", SavePath=""):
-        jgetCMD="jget ${1} ${2}".format(target,SavePath)
-        print("Get file with command ${}".format(jgetCMD))
-        #start get the file and save the file into the folder 
-    
+
     def _WriteToLog(self,log="", logLevel="1",LogType=""):
         pass
 
     def test(self):
-        self.ReadListFile()        
-	#for i in self.ReadList(avg="prexRHRS_21242.dat.1"):
-        #    print(i)
+        #self.ReadListFile()        
+        for i in self.ReadList(avg="runList.txt"):
+            print(i)
     
 if __name__ == "__main__":
     '''
@@ -174,4 +201,9 @@ if __name__ == "__main__":
     if input is a filename(with or with out path)
     '''
     test=mssget()
-    test.test()
+    for item in sys.argv[1:]:
+        if os.path.isdir(item):
+            test.setSavePath(SavePath=item)
+    for item in sys.argv[1:]:
+        test.ReadList(avg=item)
+    test.GetFiles()
