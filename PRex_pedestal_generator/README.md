@@ -27,3 +27,17 @@ A modified version of the UVa MPD4 decoder.
 ### 4. save the file to the prex database
 * it will generate a file named PRex_Pedestal.txt
 * this file is conpatible with the standard prex pedestal, need to replace the pedestal in the prex database
+
+
+## RUN LIST
+
+#### 16-Jun-2019
+* Pedestal Run 1371 20513
+
+#### 23-Aug-2019
+* Pedestal Run 2155, 21297
+   
+#### 03-Sep-2019
+* Pedestal Run 2303, 21425
+* HV off
+* pulse trigger
