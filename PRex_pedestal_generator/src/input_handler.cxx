@@ -601,12 +601,12 @@ int InputHandler::SummPedestal()
 			   auto _mean=pos_iter->second;
 			   std::string _value(Form("%5d %5.2f ",_pos,_mean));
 			   pfilio <<_value;
-			   if(temp_counter++>8){
+			   if(temp_counter++>11){
 				   pfilio<<"\\ \n";
 				   temp_counter=0;
 			   }
 		   }
-		   pfilio<<"\n";
+		   pfilio<<"\n\n";
 
 		   // write the rms value to the file
 		   std::string _rms_header;
@@ -626,12 +626,12 @@ int InputHandler::SummPedestal()
 
 			   std::string _value(Form("%5d %5.2f ",_pos,_rms));
 			   pfilio << _value;
-			   if(temp_counter++>8){
+			   if(temp_counter++>11){
 				   pfilio<<"\\ \n";
 				   temp_counter=0;
 			   	}
 		   }
-		   pfilio<<"\n";
+		   pfilio<<"\n\n";
 
 	   }
    }
