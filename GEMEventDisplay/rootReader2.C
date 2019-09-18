@@ -22,6 +22,7 @@
 #include <numeric>
 #include <TPaveText.h>
 #include <TStyle.h>
+
 //#pragma cling load("libTreeSearch-GEM.so");
 //#pragma cling load("/adaqfs/home/a-onl/siyu/PRex_MPD/libprexCounting.so"); // load
 
@@ -2116,6 +2117,32 @@ void gemEfficiency(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/pre
 	const double_t yCut[]={0.02,  0.02,   0.02,  0.02,  0.10,  0.10,  0.10};
 
 
+	// UVa GEM sapcer position
+	std::map<Int_t, std::vector<TLine *>> gemSpacerX;
+	std::map<Int_t, std::vector<TLine *>> gemSpacerY;
+
+	TLine * line;
+	for (auto chamberID: chamberList){
+		// only the UVa GEM are
+		if(chamberID>=4){
+			line=new TLine(xMinCut[chamberID]+(xMaxCut[chamberID]-xMinCut[chamberID])/2.0, yMinCut[chamberID],xMinCut[chamberID]+(xMaxCut[chamberID]-xMinCut[chamberID])/2.0, yMaxCut[chamberID]);
+			line->SetLineColor(42);
+			line->SetLineWidth(3);
+			gemSpacerX[chamberID].push_back(line);
+
+			line=new TLine(xMinCut[chamberID],yMinCut[chamberID]+(yMaxCut[chamberID]-yMinCut[chamberID])/3.0,xMaxCut[chamberID],yMinCut[chamberID]+(yMaxCut[chamberID]-yMinCut[chamberID])/3.0);
+			line->SetLineColor(42);
+			line->SetLineWidth(3);
+			gemSpacerY[chamberID].push_back(line);
+
+			line=new TLine(xMinCut[chamberID],yMinCut[chamberID]+(yMaxCut[chamberID]-yMinCut[chamberID])*2.0/3.0,xMaxCut[chamberID],yMinCut[chamberID]+(yMaxCut[chamberID]-yMinCut[chamberID])*2.0/3.0);
+			line->SetLineColor(42);
+			line->SetLineWidth(3);
+			gemSpacerY[chamberID].push_back(line);
+		}
+	}
+
+
 	// innitialize the canvas
 	for(auto chamberID: chamberList){
 		gemEffCanvas[chamberID] = new TCanvas(Form("chamber%d_eff",chamberID),Form("chamber%d_eff",chamberID),600,600);
@@ -2123,10 +2150,10 @@ void gemEfficiency(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/pre
 		gemEffCanvas[chamberID]->Draw();
 
 		if(chamberID<=3){
-			gemProjectedHist2D[chamberID]  =  new TH2F(Form("vdcPredicted_ch%d",chamberID),Form("vdcPredicted_ch%d",chamberID),20,xMinCut[chamberID],xMaxCut[chamberID],40,yMinCut[chamberID],yMaxCut[chamberID]);
+			gemProjectedHist2D[chamberID]  =  new TH2F(Form("vdcProjected_ch%d",chamberID),Form("vdcProjected_ch%d",chamberID),20,xMinCut[chamberID],xMaxCut[chamberID],40,yMinCut[chamberID],yMaxCut[chamberID]);
 			gemRealHist2D[chamberID]       =  new TH2F(Form("gemDetected_ch%d",chamberID),Form("gemDetected_ch%d",chamberID),20,xMinCut[chamberID],xMaxCut[chamberID],40,yMinCut[chamberID],yMaxCut[chamberID]);
 		}else{
-			gemProjectedHist2D[chamberID]  =  new TH2F(Form("vdcPredicted_ch%d",chamberID),Form("vdcPredicted_ch%d",chamberID),120,xMinCut[chamberID],xMaxCut[chamberID],100,yMinCut[chamberID],yMaxCut[chamberID]);
+			gemProjectedHist2D[chamberID]  =  new TH2F(Form("vdcProjected_ch%d",chamberID),Form("vdcProjected_ch%d",chamberID),120,xMinCut[chamberID],xMaxCut[chamberID],100,yMinCut[chamberID],yMaxCut[chamberID]);
 			gemRealHist2D[chamberID]       =  new TH2F(Form("gemDetected_ch%d",chamberID),Form("gemDetected_ch%d",chamberID),120,xMinCut[chamberID],xMaxCut[chamberID],100,yMinCut[chamberID],yMaxCut[chamberID]);
 		}
 	}
@@ -2546,7 +2573,7 @@ void gemEfficiency(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/pre
 		gemEfficiencyHist2D[chamberID]->SetTitle(Form("efficiency_ch%d",chamberID));
 
 		gemEfficiencyHist2D[chamberID]->Divide(gemProjectedHist2D[chamberID]);
-		gemEfficiencyHist2D[chamberID]->SetMinimum(0.5);
+		gemEfficiencyHist2D[chamberID]->SetMinimum(0.8);
 
 		gemEfficiencyHist2D[chamberID]->GetXaxis()->SetTitle("X");
 		gemEfficiencyHist2D[chamberID]->GetYaxis()->SetTitle("Y");
@@ -2563,6 +2590,16 @@ void gemEfficiency(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/pre
 		}
 
 		gemEfficiencyHist2D[chamberID]->Draw("zcol");
+
+		if(gemSpacerX.find(chamberID)!=gemSpacerX.end()){
+			for (auto i : gemSpacerX[chamberID])
+				i->Draw("same");
+		}
+		if (gemSpacerY.find(chamberID) != gemSpacerY.end()) {
+			for (auto i : gemSpacerY[chamberID])
+				i->Draw("same");
+		}
+
 		gStyle->SetOptStat("e");
 		pt = new TPaveText(0.2,0.7,0.4,0.85,"NDC");
 		pt->AddText(Form("Efficiency=%f",(double_t)(gemRealHist2D[chamberID]->GetEntries()/(double_t)(gemProjectedHist2D[chamberID]->GetEntries()))));

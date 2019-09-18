@@ -170,7 +170,7 @@ void gemNoiseSignalLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRoot
 			tree->Project((signalHist_x[ChamberID]->GetName()),Form(signalPattern_x.c_str(),ChamberID),cut.c_str());
 			canvas_x->cd(ChamberID);
 			canvas_x->cd(ChamberID)->SetLogy();
-			noiseHist_x[ChamberID]->SetXTitle("ADC(Tsample Sum)");
+			noiseHist_x[ChamberID]->SetXTitle("ADC(Tsample Average)");
 			noiseHist_x[ChamberID]->SetYTitle("Count");
 
 			noiseHist_x[ChamberID]->Draw();
@@ -184,7 +184,7 @@ void gemNoiseSignalLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRoot
 			tree->Project(signalHist_y[ChamberID]->GetName(),Form(signalPattern_y.c_str(),ChamberID),cut.c_str());
 			canvas_y->cd(ChamberID);
 			canvas_y->cd(ChamberID)->SetLogy();
-			noiseHist_y[ChamberID]->SetXTitle("ADC(Tsample Sum)");
+			noiseHist_y[ChamberID]->SetXTitle("ADC(Tsample Average)");
 			noiseHist_y[ChamberID]->SetYTitle("Count");
 			noiseHist_y[ChamberID]->Draw();
 			signalHist_y[ChamberID]->Draw("][same");
@@ -861,7 +861,7 @@ void gemTrackEfficiency(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootF
 		//initialize the Histogram
 		if(vdcPredicted2D.find(chamberID)== vdcPredicted2D.end()){
 			if(chamberID<=3){
-				vdcPredicted2D[chamberID]=new TH2F(Form("vdcPredicted_ch%d",chamberID),Form("vdcPredicted_ch%d",chamberID),20,-0.05,0.05,40,-0.1,0.1);
+				vdcPredicted2D[chamberID]=new TH2F(Form("vdcProjected_ch%d",chamberID),Form("vdcProjected_ch%d",chamberID),20,-0.05,0.05,40,-0.1,0.1);
 				gemDetected2D[chamberID]=new TH2F(Form("gemDetected_ch%d",chamberID),Form("gemDetected_ch%d",chamberID),20,-0.05,0.05,40,-0.1,0.1);
 
 			}else{
@@ -1031,7 +1031,7 @@ void gemNoiseLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/p
 			tree->Project((signalHist_x[ChamberID]->GetName()),Form(signalPattern_x.c_str(),ChamberID),cut.c_str());
 			canvas_x->cd(ChamberID);
 			//canvas_x->cd(ChamberID)->SetLogy();
-			noiseHist_x[ChamberID]->SetXTitle("ADC(Tsample Sum)");
+			noiseHist_x[ChamberID]->SetXTitle("ADC(Tsample Average)");
 			noiseHist_x[ChamberID]->SetYTitle("Count");
 			noiseHist_x[ChamberID]->Fit("gaus","","",-110,110);
 			noiseHist_x[ChamberID]->Draw();
@@ -1053,9 +1053,10 @@ void gemNoiseLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/p
 			tree->Project(signalHist_y[ChamberID]->GetName(),Form(signalPattern_y.c_str(),ChamberID),cut.c_str());
 			canvas_y->cd(ChamberID);
 			//canvas_y->cd(ChamberID)->SetLogy();
-			noiseHist_y[ChamberID]->SetXTitle("ADC(Tsample Sum)");
+			noiseHist_y[ChamberID]->SetXTitle("ADC(Tsample Average)");
 			noiseHist_y[ChamberID]->SetYTitle("Count");
 			noiseHist_y[ChamberID]->Fit("gaus","","",-150,150);
+//			noiseHist_y[ChamberID]->Scale(0.3);
 			noiseHist_y[ChamberID]->Draw();
 			//signalHist_y[ChamberID]->Draw("][same");
 			pt = new TPaveText(0.2,0.7,0.4,0.85,"NDC");
