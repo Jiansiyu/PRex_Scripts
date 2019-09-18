@@ -599,7 +599,7 @@ int InputHandler::SummPedestal()
 		   for (auto pos_iter=(dimension_iter->second).begin();pos_iter!=(dimension_iter->second).end();pos_iter++){
 			   auto _pos=pos_iter->first;
 			   auto _mean=pos_iter->second;
-			   std::string _value(Form("%5d %5.2f ",_pos,_mean));
+			   std::string _value(Form("%6d %7.2f ",_pos,_mean));
 			   pfilio <<_value;
 			   if(temp_counter++>11){
 				   pfilio<<"\\ \n";
@@ -624,7 +624,7 @@ int InputHandler::SummPedestal()
 			   //[detID][planeID][strip_pos]
 			   auto _rms=prex_rms_array[plane_iter->first][dimension_iter->first][_pos];
 
-			   std::string _value(Form("%5d %5.2f ",_pos,_rms));
+			   std::string _value(Form("%6d %7.2f ",_pos,_rms));
 			   pfilio << _value;
 			   if(temp_counter++>11){
 				   pfilio<<"\\ \n";
